@@ -343,7 +343,7 @@ def make_dashboard(data):
                 for bit in range(8):
                     x = byte_x + bit
 
-                    # Black pixel = 1
+                    # White pixel = 1
                     if pixels[x, y] == 0:
                         value |= (1 << (7 - bit))
 
