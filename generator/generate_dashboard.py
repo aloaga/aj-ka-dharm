@@ -14,43 +14,73 @@ LONGITUDE = 88.3639
 TIMEZONE_NAME = "Asia/Kolkata"
 TIMEZONE_OFFSET = 5.5
 
-API_URL = "https://api.navamsha.in/api/v1/panchang/full"
+PANCHANG_URL = "https://api.navamsha.in/api/v1/panchang/full"
+SUN_TIMES_URL = "https://api.navamsha.in/api/v1/panchang/sun-times"
 
+
+# -------------------------------------------------
+# FONTS
+# -------------------------------------------------
 
 def get_font(size, bold=False):
+
     if bold:
-        path = "/usr/share/fonts/truetype/noto/NotoSansDevanagari-Bold.ttf"
+        path = (
+            "/usr/share/fonts/truetype/noto/"
+            "NotoSansDevanagari-Bold.ttf"
+        )
     else:
-        path = "/usr/share/fonts/truetype/noto/NotoSansDevanagari-Regular.ttf"
+        path = (
+            "/usr/share/fonts/truetype/noto/"
+            "NotoSansDevanagari-Regular.ttf"
+        )
 
     if not os.path.exists(path):
-        raise FileNotFoundError(f"Font not found: {path}")
+        raise FileNotFoundError(
+            f"Font not found: {path}"
+        )
 
     return ImageFont.truetype(path, size)
 
 
+# -------------------------------------------------
+# API
+# -------------------------------------------------
+
 def get_panchang():
+
     api_key = os.environ["NAVAMSHA_API_KEY"]
 
-    now = datetime.now(ZoneInfo(TIMEZONE_NAME))
+    now = datetime.now(
+        ZoneInfo(TIMEZONE_NAME)
+    )
 
+    # Use a time after sunrise so the
+    # sunrise-based weekday belongs to
+    # the intended calendar day.
     payload = {
         "year": now.year,
         "month": now.month,
         "date": now.day,
-        "hours": now.hour,
-        "minutes": now.minute,
+        "hours": 7,
+        "minutes": 0,
         "latitude": LATITUDE,
         "longitude": LONGITUDE,
         "timezone": TIMEZONE_OFFSET,
     }
 
+    headers = {
+        "X-API-Key": api_key,
+        "Content-Type": "application/json",
+    }
+
+    # ---------------------------------------------
+    # Main Panchang
+    # ---------------------------------------------
+
     response = requests.post(
-        API_URL,
-        headers={
-            "X-API-Key": api_key,
-            "Content-Type": "application/json",
-        },
+        PANCHANG_URL,
+        headers=headers,
         json=payload,
         timeout=30,
     )
@@ -60,33 +90,167 @@ def get_panchang():
     result = response.json()
 
     if result.get("statusCode") != 200:
-        raise RuntimeError(f"Navamsha API error: {result}")
+        raise RuntimeError(
+            f"Navamsha Panchang error: {result}"
+        )
 
-    return result["output"]
+    output = result["output"]
 
+    # ---------------------------------------------
+    # Sunrise / Sunset
+    # ---------------------------------------------
+
+    sun_response = requests.post(
+        SUN_TIMES_URL,
+        headers=headers,
+        json=payload,
+        timeout=30,
+    )
+
+    sun_response.raise_for_status()
+
+    sun_result = sun_response.json()
+
+    if sun_result.get("statusCode") != 200:
+        raise RuntimeError(
+            f"Navamsha sun-times error: "
+            f"{sun_result}"
+        )
+
+    sun_output = sun_result["output"]
+
+    output["sunrise"] = extract_time(
+        sun_output,
+        "sunrise",
+    )
+
+    output["sunset"] = extract_time(
+        sun_output,
+        "sunset",
+    )
+
+    return output
+
+
+def extract_time(data, wanted_key):
+
+    """
+    Navamsha's response structure can evolve.
+    Search the returned JSON recursively for
+    the requested sunrise/sunset field.
+    """
+
+    if isinstance(data, dict):
+
+        for key, value in data.items():
+
+            if key.lower() == wanted_key.lower():
+
+                if isinstance(value, str):
+                    return value
+
+                if isinstance(value, dict):
+
+                    for subkey in [
+                        "time",
+                        "local",
+                        "formatted",
+                        "value",
+                    ]:
+
+                        if subkey in value:
+                            return str(
+                                value[subkey]
+                            )
+
+                return str(value)
+
+            result = extract_time(
+                value,
+                wanted_key,
+            )
+
+            if result != "—":
+                return result
+
+    elif isinstance(data, list):
+
+        for item in data:
+
+            result = extract_time(
+                item,
+                wanted_key,
+            )
+
+            if result != "—":
+                return result
+
+    return "—"
+
+
+# -------------------------------------------------
+# TEXT HELPERS
+# -------------------------------------------------
 
 def text_width(draw, text, font):
-    box = draw.textbbox((0, 0), text, font=font)
+
+    box = draw.textbbox(
+        (0, 0),
+        text,
+        font=font,
+    )
+
     return box[2] - box[0]
 
 
-def centered(draw, text, y, font, center_x=400):
-    width = text_width(draw, text, font)
+def centered(
+    draw,
+    text,
+    y,
+    font,
+    center_x=400,
+):
+
+    width = text_width(
+        draw,
+        text,
+        font,
+    )
 
     draw.text(
-        (center_x - width // 2, y),
+        (
+            center_x - width // 2,
+            y,
+        ),
         text,
         fill=0,
         font=font,
     )
 
 
+# -------------------------------------------------
+# HINDI PANCHANG TRANSLATIONS
+# -------------------------------------------------
+
 def hindi_panchang(data):
-    weekday = data.get("weekday", {})
-    tithi = data.get("tithi", {})
-    nakshatra = data.get("nakshatra", {})
+
+    weekday = data.get(
+        "weekday",
+        {},
+    )
+
+    tithi = data.get(
+        "tithi",
+        {},
+    )
+
+    nakshatra = data.get(
+        "nakshatra",
+        {},
+    )
 
     weekday_hi = {
+
         "Sunday": "रविवार",
         "Monday": "सोमवार",
         "Tuesday": "मंगलवार",
@@ -94,14 +258,18 @@ def hindi_panchang(data):
         "Thursday": "गुरुवार",
         "Friday": "शुक्रवार",
         "Saturday": "शनिवार",
+
     }
 
     paksha_hi = {
+
         "Shukla": "शुक्ल पक्ष",
         "Krishna": "कृष्ण पक्ष",
+
     }
 
     tithi_hi = {
+
         "Pratipada": "प्रतिपदा",
         "Dvitiya": "द्वितीया",
         "Tritiya": "तृतीया",
@@ -118,9 +286,11 @@ def hindi_panchang(data):
         "Chaturdashi": "चतुर्दशी",
         "Purnima": "पूर्णिमा",
         "Amavasya": "अमावस्या",
+
     }
 
     nakshatra_hi = {
+
         "Ashwini": "अश्विनी",
         "Bharani": "भरणी",
         "Krittika": "कृत्तिका",
@@ -148,6 +318,7 @@ def hindi_panchang(data):
         "Purva Bhadrapada": "पूर्वाभाद्रपद",
         "Uttara Bhadrapada": "उत्तराभाद्रपद",
         "Revati": "रेवती",
+
     }
 
     weekday_display = weekday_hi.get(
@@ -166,7 +337,11 @@ def hindi_panchang(data):
     )
 
     if paksha_display:
-        tithi_display = f"{paksha_display} — {tithi_display}"
+
+        tithi_display = (
+            f"{paksha_display} — "
+            f"{tithi_display}"
+        )
 
     nakshatra_display = nakshatra_hi.get(
         nakshatra.get("name", ""),
@@ -174,63 +349,189 @@ def hindi_panchang(data):
     )
 
     return {
+
         "weekday": weekday_display,
         "tithi": tithi_display,
         "nakshatra": nakshatra_display,
+
     }
 
 
+# -------------------------------------------------
+# DATE
+# -------------------------------------------------
+
+def hindi_date():
+
+    now = datetime.now(
+        ZoneInfo(TIMEZONE_NAME)
+    )
+
+    months_hi = {
+
+        1: "जनवरी",
+        2: "फ़रवरी",
+        3: "मार्च",
+        4: "अप्रैल",
+        5: "मई",
+        6: "जून",
+        7: "जुलाई",
+        8: "अगस्त",
+        9: "सितम्बर",
+        10: "अक्टूबर",
+        11: "नवम्बर",
+        12: "दिसम्बर",
+
+    }
+
+    hindi_digits = str.maketrans(
+        "0123456789",
+        "०१२३४५६७८९",
+    )
+
+    day = str(
+        now.day
+    ).translate(
+        hindi_digits
+    )
+
+    year = str(
+        now.year
+    ).translate(
+        hindi_digits
+    )
+
+    month = months_hi[
+        now.month
+    ]
+
+    return (
+        f"{day} {month} {year}"
+    )
+
+
+# -------------------------------------------------
+# DASHBOARD
+# -------------------------------------------------
+
 def make_dashboard(data):
+
     image = Image.new(
         "1",
-        (WIDTH, HEIGHT),
+        (
+            WIDTH,
+            HEIGHT,
+        ),
         1,
     )
 
-    draw = ImageDraw.Draw(image)
+    draw = ImageDraw.Draw(
+        image
+    )
 
-    title_font = get_font(28, True)
-    section_font = get_font(20, True)
-    body_font = get_font(18)
-    body_bold = get_font(18, True)
-    small_font = get_font(16)
+    title_font = get_font(
+        28,
+        True,
+    )
 
-    panchang = hindi_panchang(data)
+    section_font = get_font(
+        20,
+        True,
+    )
+
+    body_font = get_font(
+        18,
+    )
+
+    body_bold = get_font(
+        18,
+        True,
+    )
+
+    small_font = get_font(
+        16,
+    )
+
+    panchang = hindi_panchang(
+        data
+    )
+
+    date_display = hindi_date()
 
     # -------------------------------------------------
     # OUTER FRAME
     # -------------------------------------------------
 
     draw.rectangle(
-        (12, 12, WIDTH - 13, HEIGHT - 13),
+        (
+            12,
+            12,
+            WIDTH - 13,
+            HEIGHT - 13,
+        ),
         outline=0,
         width=2,
     )
 
     draw.rectangle(
-        (20, 20, WIDTH - 21, HEIGHT - 21),
+        (
+            20,
+            20,
+            WIDTH - 21,
+            HEIGHT - 21,
+        ),
         outline=0,
         width=1,
     )
 
-    # Corner flourishes
+    # -------------------------------------------------
+    # CORNER FLOURISHES
+    # -------------------------------------------------
 
     corners = [
+
         (30, 30, 1, 1),
-        (WIDTH - 30, 30, -1, 1),
-        (30, HEIGHT - 30, 1, -1),
-        (WIDTH - 30, HEIGHT - 30, -1, -1),
+        (
+            WIDTH - 30,
+            30,
+            -1,
+            1,
+        ),
+        (
+            30,
+            HEIGHT - 30,
+            1,
+            -1,
+        ),
+        (
+            WIDTH - 30,
+            HEIGHT - 30,
+            -1,
+            -1,
+        ),
+
     ]
 
     for x, y, sx, sy in corners:
+
         draw.line(
-            (x, y, x + 18 * sx, y),
+            (
+                x,
+                y,
+                x + 18 * sx,
+                y,
+            ),
             fill=0,
             width=2,
         )
 
         draw.line(
-            (x, y, x, y + 18 * sy),
+            (
+                x,
+                y,
+                x,
+                y + 18 * sy,
+            ),
             fill=0,
             width=2,
         )
@@ -242,12 +543,24 @@ def make_dashboard(data):
     centered(
         draw,
         "आज का धर्म",
-        28,
+        25,
         title_font,
     )
 
+    centered(
+        draw,
+        date_display,
+        57,
+        small_font,
+    )
+
     draw.line(
-        (45, 70, WIDTH - 45, 70),
+        (
+            45,
+            79,
+            WIDTH - 45,
+            79,
+        ),
         fill=0,
         width=2,
     )
@@ -257,7 +570,7 @@ def make_dashboard(data):
     # -------------------------------------------------
 
     cx = 125
-    cy = 145
+    cy = 150
 
     draw.ellipse(
         (
@@ -284,6 +597,7 @@ def make_dashboard(data):
     # Mandala dots
 
     for dx, dy in [
+
         (0, -48),
         (34, -34),
         (48, 0),
@@ -292,7 +606,9 @@ def make_dashboard(data):
         (-34, 34),
         (-48, 0),
         (-34, -34),
+
     ]:
+
         draw.ellipse(
             (
                 cx + dx - 2,
@@ -303,7 +619,10 @@ def make_dashboard(data):
             fill=0,
         )
 
-    om_font = get_font(58, True)
+    om_font = get_font(
+        58,
+        True,
+    )
 
     om_width = text_width(
         draw,
@@ -314,7 +633,7 @@ def make_dashboard(data):
     draw.text(
         (
             cx - om_width // 2,
-            105,
+            108,
         ),
         "ॐ",
         fill=0,
@@ -324,7 +643,7 @@ def make_dashboard(data):
     centered(
         draw,
         "शिव",
-        174,
+        177,
         body_bold,
         cx,
     )
@@ -332,35 +651,67 @@ def make_dashboard(data):
     centered(
         draw,
         "ॐ नमः शिवाय",
-        202,
+        205,
         small_font,
         cx,
     )
 
     # -------------------------------------------------
-    # PANCHANG
+    # PANCHANG HEADING
     # -------------------------------------------------
 
     centered(
         draw,
         "आज का पंचांग",
-        245,
+        242,
         section_font,
         cx,
     )
 
     rows = [
-        ("वार", panchang["weekday"]),
-        ("तिथि", panchang["tithi"]),
-        ("नक्षत्र", panchang["nakshatra"]),
+
+        (
+            "वार",
+            panchang["weekday"],
+        ),
+
+        (
+            "तिथि",
+            panchang["tithi"],
+        ),
+
+        (
+            "नक्षत्र",
+            panchang["nakshatra"],
+        ),
+
+        (
+            "सूर्योदय",
+            data.get(
+                "sunrise",
+                "—",
+            ),
+        ),
+
+        (
+            "सूर्यास्त",
+            data.get(
+                "sunset",
+                "—",
+            ),
+        ),
+
     ]
 
-    y = 285
+    y = 282
 
     for label, value in rows:
 
         draw.text(
-            (45, y),
+            (
+                45,
+                y,
+            ),
             label,
             fill=0,
             font=small_font,
@@ -382,13 +733,21 @@ def make_dashboard(data):
             font=small_font,
         )
 
-        for x in range(125, 315, 8):
+        for x in range(
+            125,
+            315,
+            8,
+        ):
+
             draw.point(
-                (x, y + 10),
+                (
+                    x,
+                    y + 10,
+                ),
                 fill=0,
             )
 
-        y += 30
+        y += 27
 
     # -------------------------------------------------
     # CENTER DIVIDER
@@ -399,7 +758,7 @@ def make_dashboard(data):
     draw.line(
         (
             divider_x,
-            95,
+            100,
             divider_x,
             425,
         ),
@@ -411,10 +770,22 @@ def make_dashboard(data):
 
     draw.polygon(
         [
-            (divider_x, 255),
-            (divider_x - 7, 263),
-            (divider_x, 271),
-            (divider_x + 7, 263),
+            (
+                divider_x,
+                255,
+            ),
+            (
+                divider_x - 7,
+                263,
+            ),
+            (
+                divider_x,
+                271,
+            ),
+            (
+                divider_x + 7,
+                263,
+            ),
         ],
         outline=0,
     )
@@ -425,7 +796,11 @@ def make_dashboard(data):
 
     right_center = 585
 
-    def right_header(text, y):
+    def right_header(
+        text,
+        y,
+    ):
+
         left = 425
         right = 745
         height = 32
@@ -449,7 +824,8 @@ def make_dashboard(data):
 
         draw.text(
             (
-                right_center - width // 2,
+                right_center
+                - width // 2,
                 y + 3,
             ),
             text,
@@ -457,7 +833,12 @@ def make_dashboard(data):
             font=section_font,
         )
 
-    def right_centered(text, y, font):
+    def right_centered(
+        text,
+        y,
+        font,
+    ):
+
         centered(
             draw,
             text,
@@ -466,7 +847,9 @@ def make_dashboard(data):
             right_center,
         )
 
-    # Shloka
+    # -------------------------------------------------
+    # SHLOKA
+    # -------------------------------------------------
 
     right_header(
         "आज का श्लोक",
@@ -485,7 +868,9 @@ def make_dashboard(data):
         body_bold,
     )
 
-    # Meaning
+    # -------------------------------------------------
+    # MEANING
+    # -------------------------------------------------
 
     right_header(
         "अर्थ",
@@ -504,7 +889,9 @@ def make_dashboard(data):
         small_font,
     )
 
-    # Message
+    # -------------------------------------------------
+    # MESSAGE
+    # -------------------------------------------------
 
     right_header(
         "आज का संदेश",
@@ -524,11 +911,16 @@ def make_dashboard(data):
     )
 
     # -------------------------------------------------
-    # BOTTOM SANKALP
+    # SANKALP
     # -------------------------------------------------
 
     draw.line(
-        (45, 425, WIDTH - 45, 425),
+        (
+            45,
+            425,
+            WIDTH - 45,
+            425,
+        ),
         fill=0,
         width=2,
     )
@@ -551,7 +943,9 @@ def make_dashboard(data):
         "wb",
     ) as f:
 
-        for y in range(HEIGHT):
+        for y in range(
+            HEIGHT
+        ):
 
             for byte_x in range(
                 0,
@@ -565,19 +959,26 @@ def make_dashboard(data):
 
                     x = byte_x + bit
 
-                    # White pixel = 1
+                    # White pixel = 1.
                     # This matches the current
                     # ESP32 drawBitmap configuration.
 
                     if pixels[x, y] == 1:
+
                         value |= (
-                            1 << (7 - bit)
+                            1 << (
+                                7 - bit
+                            )
                         )
 
                 f.write(
                     bytes([value])
                 )
 
+
+# -------------------------------------------------
+# MAIN
+# -------------------------------------------------
 
 def main():
 
@@ -606,22 +1007,38 @@ def main():
         data.get("weekday"),
     )
 
-    make_dashboard(data)
+    print(
+        "Sunrise:",
+        data.get("sunrise"),
+    )
+
+    print(
+        "Sunset:",
+        data.get("sunset"),
+    )
+
+    make_dashboard(
+        data
+    )
 
     size = os.path.getsize(
         "dashboard.bin"
     )
 
     print(
-        f"dashboard.bin created: {size} bytes"
+        f"dashboard.bin created: "
+        f"{size} bytes"
     )
 
     if size != 48000:
+
         raise RuntimeError(
-            f"Wrong bitmap size: {size}. "
+            f"Wrong bitmap size: "
+            f"{size}. "
             f"Expected 48000 bytes."
         )
 
 
 if __name__ == "__main__":
+
     main()
