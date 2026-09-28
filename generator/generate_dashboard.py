@@ -180,25 +180,102 @@ def make_dashboard(data):
     # Panchang heading
     centered(draw, "आज का पंचांग", 245, section_font, cx)
 
-    tithi = data.get("tithi", {})
-    nakshatra = data.get("nakshatra", {})
-    weekday = data.get("weekday", {})
+   tithi = data.get("tithi", {})
+nakshatra = data.get("nakshatra", {})
+weekday = data.get("weekday", {})
 
-    tithi_name = tithi.get("name", "—")
-    paksha = tithi.get("paksha", "")
+weekday_hi = {
+    "Sunday": "रविवार",
+    "Monday": "सोमवार",
+    "Tuesday": "मंगलवार",
+    "Wednesday": "बुधवार",
+    "Thursday": "गुरुवार",
+    "Friday": "शुक्रवार",
+    "Saturday": "शनिवार",
+}
 
-    if paksha:
-        tithi_display = f"{paksha} — {tithi_name}"
-    else:
-        tithi_display = tithi_name
+paksha_hi = {
+    "Shukla": "शुक्ल पक्ष",
+    "Krishna": "कृष्ण पक्ष",
+}
 
-    nakshatra_display = nakshatra.get("name", "—")
+tithi_hi = {
+    "Pratipada": "प्रतिपदा",
+    "Dvitiya": "द्वितीया",
+    "Tritiya": "तृतीया",
+    "Chaturthi": "चतुर्थी",
+    "Panchami": "पंचमी",
+    "Shashthi": "षष्ठी",
+    "Saptami": "सप्तमी",
+    "Ashtami": "अष्टमी",
+    "Navami": "नवमी",
+    "Dashami": "दशमी",
+    "Ekadashi": "एकादशी",
+    "Dwadashi": "द्वादशी",
+    "Trayodashi": "त्रयोदशी",
+    "Chaturdashi": "चतुर्दशी",
+    "Purnima": "पूर्णिमा",
+    "Amavasya": "अमावस्या",
+}
 
-    rows = [
-        ("वार", weekday.get("name", "—")),
-        ("तिथि", tithi_display),
-        ("नक्षत्र", nakshatra_display),
-    ]
+nakshatra_hi = {
+    "Ashwini": "अश्विनी",
+    "Bharani": "भरणी",
+    "Krittika": "कृत्तिका",
+    "Rohini": "रोहिणी",
+    "Mrigashira": "मृगशिरा",
+    "Ardra": "आर्द्रा",
+    "Punarvasu": "पुनर्वसु",
+    "Pushya": "पुष्य",
+    "Ashlesha": "आश्लेषा",
+    "Magha": "मघा",
+    "Purva Phalguni": "पूर्वा फाल्गुनी",
+    "Uttara Phalguni": "उत्तरा फाल्गुनी",
+    "Hasta": "हस्त",
+    "Chitra": "चित्रा",
+    "Swati": "स्वाती",
+    "Vishakha": "विशाखा",
+    "Anuradha": "अनुराधा",
+    "Jyeshtha": "ज्येष्ठा",
+    "Mula": "मूल",
+    "Purva Ashadha": "पूर्वाषाढ़ा",
+    "Uttara Ashadha": "उत्तराषाढ़ा",
+    "Shravana": "श्रवण",
+    "Dhanishtha": "धनिष्ठा",
+    "Shatabhisha": "शतभिषा",
+    "Purva Bhadrapada": "पूर्वाभाद्रपद",
+    "Uttara Bhadrapada": "उत्तराभाद्रपद",
+    "Revati": "रेवती",
+}
+
+weekday_display = weekday_hi.get(
+    weekday.get("name", ""),
+    weekday.get("name", "—")
+)
+
+paksha_display = paksha_hi.get(
+    tithi.get("paksha", ""),
+    tithi.get("paksha", "")
+)
+
+tithi_display = tithi_hi.get(
+    tithi.get("name", ""),
+    tithi.get("name", "—")
+)
+
+if paksha_display:
+    tithi_display = f"{paksha_display} — {tithi_display}"
+
+nakshatra_display = nakshatra_hi.get(
+    nakshatra.get("name", ""),
+    nakshatra.get("name", "—")
+)
+
+rows = [
+    ("वार", weekday_display),
+    ("तिथि", tithi_display),
+    ("नक्षत्र", nakshatra_display),
+]
 
     y = 285
 
