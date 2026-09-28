@@ -18,9 +18,9 @@ PANCHANG_URL = "https://api.navamsha.in/api/v1/panchang/full"
 SUN_TIMES_URL = "https://api.navamsha.in/api/v1/panchang/sun-times"
 
 
-# -------------------------------------------------
+# =================================================
 # FONTS
-# -------------------------------------------------
+# =================================================
 
 def get_font(size, bold=False):
 
@@ -43,9 +43,9 @@ def get_font(size, bold=False):
     return ImageFont.truetype(path, size)
 
 
-# -------------------------------------------------
+# =================================================
 # API
-# -------------------------------------------------
+# =================================================
 
 def get_panchang():
 
@@ -71,10 +71,6 @@ def get_panchang():
         "Content-Type": "application/json",
     }
 
-    # ---------------------------------------------
-    # Main Panchang
-    # ---------------------------------------------
-
     response = requests.post(
         PANCHANG_URL,
         headers=headers,
@@ -92,10 +88,6 @@ def get_panchang():
         )
 
     output = result["output"]
-
-    # ---------------------------------------------
-    # Sunrise / Sunset
-    # ---------------------------------------------
 
     sun_response = requests.post(
         SUN_TIMES_URL,
@@ -115,14 +107,6 @@ def get_panchang():
 
     sun_output = sun_result["output"]
 
-    # Navamsha returns:
-    #
-    # rise.local_datetime
-    # set.local_datetime
-    #
-    # Example:
-    # 2026-09-29T05:27:20+05:30
-
     output["sunrise"] = (
         sun_output["rise"]["local_datetime"][11:16]
     )
@@ -134,9 +118,9 @@ def get_panchang():
     return output
 
 
-# -------------------------------------------------
+# =================================================
 # TEXT HELPERS
-# -------------------------------------------------
+# =================================================
 
 def text_width(draw, text, font):
 
@@ -174,9 +158,34 @@ def centered(
     )
 
 
-# -------------------------------------------------
+def right_aligned(
+    draw,
+    text,
+    x,
+    y,
+    font,
+):
+
+    width = text_width(
+        draw,
+        text,
+        font,
+    )
+
+    draw.text(
+        (
+            x - width,
+            y,
+        ),
+        text,
+        fill=0,
+        font=font,
+    )
+
+
+# =================================================
 # HINDI PANCHANG
-# -------------------------------------------------
+# =================================================
 
 def hindi_panchang(data):
 
@@ -276,8 +285,7 @@ def hindi_panchang(data):
 
     if paksha_display:
         tithi_display = (
-            f"{paksha_display} — "
-            f"{tithi_display}"
+            f"{paksha_display} — {tithi_display}"
         )
 
     nakshatra_display = nakshatra_hi.get(
@@ -292,9 +300,9 @@ def hindi_panchang(data):
     }
 
 
-# -------------------------------------------------
+# =================================================
 # HINDI DATE
-# -------------------------------------------------
+# =================================================
 
 def hindi_date():
 
@@ -322,15 +330,11 @@ def hindi_date():
         "०१२३४५६७८९",
     )
 
-    day = str(
-        now.day
-    ).translate(
+    day = str(now.day).translate(
         hindi_digits
     )
 
-    year = str(
-        now.year
-    ).translate(
+    year = str(now.year).translate(
         hindi_digits
     )
 
@@ -341,9 +345,226 @@ def hindi_date():
     )
 
 
-# -------------------------------------------------
+# =================================================
+# DECORATIVE ART
+# =================================================
+
+def draw_corner(draw, x, y, sx, sy):
+
+    # Main L-shaped temple flourish
+    draw.line(
+        (
+            x,
+            y,
+            x + 30 * sx,
+            y,
+        ),
+        fill=0,
+        width=2,
+    )
+
+    draw.line(
+        (
+            x,
+            y,
+            x,
+            y + 30 * sy,
+        ),
+        fill=0,
+        width=2,
+    )
+
+    # Inner stepped flourish
+    draw.line(
+        (
+            x + 5 * sx,
+            y + 5 * sy,
+            x + 20 * sx,
+            y + 5 * sy,
+        ),
+        fill=0,
+        width=1,
+    )
+
+    draw.line(
+        (
+            x + 5 * sx,
+            y + 5 * sy,
+            x + 5 * sx,
+            y + 20 * sy,
+        ),
+        fill=0,
+        width=1,
+    )
+
+    # Small diamond
+    cx = x + 17 * sx
+    cy = y + 17 * sy
+
+    draw.polygon(
+        [
+            (cx, cy - 4),
+            (cx + 4 * sx, cy),
+            (cx, cy + 4),
+            (cx - 4 * sx, cy),
+        ],
+        outline=0,
+    )
+
+
+def draw_mandala(draw, cx, cy):
+
+    # Outer circles
+    draw.ellipse(
+        (
+            cx - 67,
+            cy - 67,
+            cx + 67,
+            cy + 67,
+        ),
+        outline=0,
+        width=2,
+    )
+
+    draw.ellipse(
+        (
+            cx - 58,
+            cy - 58,
+            cx + 58,
+            cy + 58,
+        ),
+        outline=0,
+        width=1,
+    )
+
+    draw.ellipse(
+        (
+            cx - 46,
+            cy - 46,
+            cx + 46,
+            cy + 46,
+        ),
+        outline=0,
+        width=1,
+    )
+
+    # Eight radial petals
+    points = [
+        (0, -51),
+        (36, -36),
+        (51, 0),
+        (36, 36),
+        (0, 51),
+        (-36, 36),
+        (-51, 0),
+        (-36, -36),
+    ]
+
+    for dx, dy in points:
+
+        draw.ellipse(
+            (
+                cx + dx - 5,
+                cy + dy - 5,
+                cx + dx + 5,
+                cy + dy + 5,
+            ),
+            outline=0,
+            width=1,
+        )
+
+    # Eight tiny dots
+    for dx, dy in [
+        (0, -61),
+        (43, -43),
+        (61, 0),
+        (43, 43),
+        (0, 61),
+        (-43, 43),
+        (-61, 0),
+        (-43, -43),
+    ]:
+
+        draw.ellipse(
+            (
+                cx + dx - 2,
+                cy + dy - 2,
+                cx + dx + 2,
+                cy + dy + 2,
+            ),
+            fill=0,
+        )
+
+
+def draw_sun_icon(draw, cx, cy):
+
+    draw.ellipse(
+        (
+            cx - 5,
+            cy - 5,
+            cx + 5,
+            cy + 5,
+        ),
+        outline=0,
+        width=1,
+    )
+
+    for dx, dy in [
+        (0, -9),
+        (0, 9),
+        (-9, 0),
+        (9, 0),
+    ]:
+
+        draw.line(
+            (
+                cx + dx,
+                cy + dy,
+                cx + dx * 1.35,
+                cy + dy * 1.35,
+            ),
+            fill=0,
+            width=1,
+        )
+
+
+def draw_divider_ornament(draw, x, y):
+
+    draw.line(
+        (
+            x,
+            y - 10,
+            x,
+            y + 10,
+        ),
+        fill=0,
+        width=1,
+    )
+
+    draw.polygon(
+        [
+            (x, y - 7),
+            (x + 7, y),
+            (x, y + 7),
+            (x - 7, y),
+        ],
+        outline=0,
+    )
+
+    draw.ellipse(
+        (
+            x - 2,
+            y - 2,
+            x + 2,
+            y + 2,
+        ),
+        fill=0,
+    )
+
+
+# =================================================
 # DASHBOARD
-# -------------------------------------------------
+# =================================================
 
 def make_dashboard(data):
 
@@ -358,42 +579,26 @@ def make_dashboard(data):
 
     draw = ImageDraw.Draw(image)
 
-    title_font = get_font(
-        28,
-        True,
-    )
-
-    section_font = get_font(
-        20,
-        True,
-    )
-
-    body_font = get_font(
-        18,
-    )
-
-    body_bold = get_font(
-        18,
-        True,
-    )
-
-    small_font = get_font(
-        16,
-    )
+    title_font = get_font(29, True)
+    header_font = get_font(19, True)
+    body_bold = get_font(18, True)
+    body_font = get_font(17)
+    small_font = get_font(15)
+    tiny_font = get_font(14)
 
     panchang = hindi_panchang(data)
     date_display = hindi_date()
 
     # -------------------------------------------------
-    # OUTER FRAME
+    # FRAME
     # -------------------------------------------------
 
     draw.rectangle(
         (
-            12,
-            12,
-            WIDTH - 13,
-            HEIGHT - 13,
+            10,
+            10,
+            WIDTH - 11,
+            HEIGHT - 11,
         ),
         outline=0,
         width=2,
@@ -401,49 +606,19 @@ def make_dashboard(data):
 
     draw.rectangle(
         (
-            20,
-            20,
-            WIDTH - 21,
-            HEIGHT - 21,
+            18,
+            18,
+            WIDTH - 19,
+            HEIGHT - 19,
         ),
         outline=0,
         width=1,
     )
 
-    # -------------------------------------------------
-    # CORNER FLOURISHES
-    # -------------------------------------------------
-
-    corners = [
-        (30, 30, 1, 1),
-        (WIDTH - 30, 30, -1, 1),
-        (30, HEIGHT - 30, 1, -1),
-        (WIDTH - 30, HEIGHT - 30, -1, -1),
-    ]
-
-    for x, y, sx, sy in corners:
-
-        draw.line(
-            (
-                x,
-                y,
-                x + 18 * sx,
-                y,
-            ),
-            fill=0,
-            width=2,
-        )
-
-        draw.line(
-            (
-                x,
-                y,
-                x,
-                y + 18 * sy,
-            ),
-            fill=0,
-            width=2,
-        )
+    draw_corner(draw, 30, 30, 1, 1)
+    draw_corner(draw, WIDTH - 30, 30, -1, 1)
+    draw_corner(draw, 30, HEIGHT - 30, 1, -1)
+    draw_corner(draw, WIDTH - 30, HEIGHT - 30, -1, -1)
 
     # -------------------------------------------------
     # HEADER
@@ -452,113 +627,67 @@ def make_dashboard(data):
     centered(
         draw,
         "आज का धर्म",
-        25,
+        24,
         title_font,
     )
 
     centered(
         draw,
-        date_display,
+        f"{panchang['weekday']}  •  {date_display}",
         57,
         small_font,
     )
 
     draw.line(
         (
-            45,
-            79,
-            WIDTH - 45,
-            79,
+            48,
+            82,
+            752,
+            82,
         ),
         fill=0,
         width=2,
     )
 
     # -------------------------------------------------
-    # LEFT DEVOTIONAL MANDALA
+    # LEFT PANEL
     # -------------------------------------------------
 
-    cx = 125
-    cy = 150
+    left_center = 205
 
-    draw.ellipse(
-        (
-            cx - 65,
-            cy - 65,
-            cx + 65,
-            cy + 65,
-        ),
-        outline=0,
-        width=2,
+    draw_mandala(
+        draw,
+        left_center,
+        145,
     )
-
-    draw.ellipse(
-        (
-            cx - 55,
-            cy - 55,
-            cx + 55,
-            cy + 55,
-        ),
-        outline=0,
-        width=1,
-    )
-
-    for dx, dy in [
-        (0, -48),
-        (34, -34),
-        (48, 0),
-        (34, 34),
-        (0, 48),
-        (-34, 34),
-        (-48, 0),
-        (-34, -34),
-    ]:
-
-        draw.ellipse(
-            (
-                cx + dx - 2,
-                cy + dy - 2,
-                cx + dx + 2,
-                cy + dy + 2,
-            ),
-            fill=0,
-        )
 
     om_font = get_font(
-        58,
+        57,
         True,
     )
 
-    om_width = text_width(
+    centered(
         draw,
         "ॐ",
+        105,
         om_font,
-    )
-
-    draw.text(
-        (
-            cx - om_width // 2,
-            108,
-        ),
-        "ॐ",
-        fill=0,
-        font=om_font,
+        left_center,
     )
 
     centered(
         draw,
         "शिव",
-        177,
+        181,
         body_bold,
-        cx,
+        left_center,
     )
 
     centered(
         draw,
         "ॐ नमः शिवाय",
-        205,
+        208,
         small_font,
-        cx,
+        left_center,
     )
 
     # -------------------------------------------------
@@ -569,46 +698,56 @@ def make_dashboard(data):
         draw,
         "आज का पंचांग",
         242,
-        section_font,
-        cx,
+        header_font,
+        left_center,
+    )
+
+    draw.line(
+        (
+            58,
+            270,
+            352,
+            270,
+        ),
+        fill=0,
+        width=1,
     )
 
     rows = [
         (
             "वार",
             panchang["weekday"],
+            False,
         ),
         (
             "तिथि",
             panchang["tithi"],
+            False,
         ),
         (
             "नक्षत्र",
             panchang["nakshatra"],
+            False,
         ),
         (
             "सूर्योदय",
-            data.get(
-                "sunrise",
-                "—",
-            ),
+            data.get("sunrise", "—"),
+            True,
         ),
         (
             "सूर्यास्त",
-            data.get(
-                "sunset",
-                "—",
-            ),
+            data.get("sunset", "—"),
+            True,
         ),
     ]
 
-    y = 282
+    y = 280
 
-    for label, value in rows:
+    for label, value, sun_icon in rows:
 
         draw.text(
             (
-                45,
+                58,
                 y,
             ),
             label,
@@ -616,34 +755,45 @@ def make_dashboard(data):
             font=small_font,
         )
 
-        value_width = text_width(
-            draw,
-            value,
-            small_font,
-        )
-
-        draw.text(
-            (
-                335 - value_width,
-                y,
-            ),
-            value,
-            fill=0,
-            font=small_font,
-        )
-
+        # Dotted leader
         for x in range(
-            125,
-            315,
-            8,
+            110,
+            275,
+            7,
         ):
 
             draw.point(
                 (
                     x,
-                    y + 10,
+                    y + 9,
                 ),
                 fill=0,
+            )
+
+        if sun_icon:
+
+            draw_sun_icon(
+                draw,
+                290,
+                y + 10,
+            )
+
+            right_aligned(
+                draw,
+                value,
+                350,
+                y,
+                small_font,
+            )
+
+        else:
+
+            right_aligned(
+                draw,
+                value,
+                350,
+                y,
+                small_font,
             )
 
         y += 27
@@ -657,34 +807,41 @@ def make_dashboard(data):
     draw.line(
         (
             divider_x,
-            100,
+            98,
             divider_x,
-            425,
+            421,
         ),
         fill=0,
-        width=2,
+        width=1,
     )
 
-    draw.polygon(
-        [
-            (
-                divider_x,
-                255,
-            ),
-            (
-                divider_x - 7,
-                263,
-            ),
-            (
-                divider_x,
-                271,
-            ),
-            (
-                divider_x + 7,
-                263,
-            ),
-        ],
-        outline=0,
+    # Break the divider around ornament
+    draw.line(
+        (
+            divider_x,
+            98,
+            divider_x,
+            250,
+        ),
+        fill=0,
+        width=1,
+    )
+
+    draw.line(
+        (
+            divider_x,
+            276,
+            divider_x,
+            421,
+        ),
+        fill=0,
+        width=1,
+    )
+
+    draw_divider_ornament(
+        draw,
+        divider_x,
+        263,
     )
 
     # -------------------------------------------------
@@ -697,36 +854,40 @@ def make_dashboard(data):
 
         left = 425
         right = 745
-        height = 32
+        bottom = y + 30
 
         draw.rounded_rectangle(
             (
                 left,
                 y,
                 right,
-                y + height,
+                bottom,
             ),
-            radius=7,
+            radius=6,
             fill=0,
         )
 
         width = text_width(
             draw,
             text,
-            section_font,
+            header_font,
         )
 
         draw.text(
             (
                 right_center - width // 2,
-                y + 3,
+                y + 2,
             ),
             text,
             fill=1,
-            font=section_font,
+            font=header_font,
         )
 
-    def right_centered(text, y, font):
+    def right_text(
+        text,
+        y,
+        font,
+    ):
 
         centered(
             draw,
@@ -736,60 +897,57 @@ def make_dashboard(data):
             right_center,
         )
 
-    # Shloka
-
+    # SHLOKA
     right_header(
         "आज का श्लोक",
         105,
     )
 
-    right_centered(
+    right_text(
         "कर्मण्येवाधिकारस्ते",
-        150,
+        149,
         body_bold,
     )
 
-    right_centered(
+    right_text(
         "मा फलेषु कदाचन ।",
-        178,
+        176,
         body_bold,
     )
 
-    # Meaning
-
+    # MEANING
     right_header(
         "अर्थ",
-        215,
+        211,
     )
 
-    right_centered(
+    right_text(
         "अपने कर्म पर ध्यान दें;",
-        258,
+        252,
         small_font,
     )
 
-    right_centered(
+    right_text(
         "उसके फल की चिंता न करें।",
-        282,
+        275,
         small_font,
     )
 
-    # Message
-
+    # MESSAGE
     right_header(
         "आज का संदेश",
-        315,
+        308,
     )
 
-    right_centered(
+    right_text(
         "धैर्य और निष्ठा से",
-        358,
+        349,
         small_font,
     )
 
-    right_centered(
+    right_text(
         "किया गया कर्म भी साधना है।",
-        382,
+        372,
         small_font,
     )
 
@@ -799,10 +957,10 @@ def make_dashboard(data):
 
     draw.line(
         (
-            45,
-            425,
-            WIDTH - 45,
-            425,
+            48,
+            421,
+            752,
+            421,
         ),
         fill=0,
         width=2,
@@ -811,12 +969,12 @@ def make_dashboard(data):
     centered(
         draw,
         "आज का संकल्प",
-        432,
-        small_font,
+        429,
+        tiny_font,
     )
 
     # -------------------------------------------------
-    # RAW 1-BIT BITMAP
+    # WRITE RAW BITMAP
     # -------------------------------------------------
 
     pixels = image.load()
@@ -840,9 +998,7 @@ def make_dashboard(data):
 
                     x = byte_x + bit
 
-                    # White pixel = 1.
-                    # Matches the current ESP32 configuration.
-
+                    # White = 1
                     if pixels[x, y] == 1:
 
                         value |= (
@@ -856,9 +1012,9 @@ def make_dashboard(data):
                 )
 
 
-# -------------------------------------------------
+# =================================================
 # MAIN
-# -------------------------------------------------
+# =================================================
 
 def main():
 
