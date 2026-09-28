@@ -170,7 +170,6 @@ def get_daily_content():
         ZoneInfo(TIMEZONE_NAME)
     )
 
-    # Seven-day prototype rotation.
     day_index = (
         now.timetuple().tm_yday - 1
     ) % len(DAILY_CONTENT)
@@ -206,10 +205,6 @@ def get_panchang():
         "Content-Type": "application/json",
     }
 
-    # -------------------------------------------------
-    # MAIN PANCHANG
-    # -------------------------------------------------
-
     response = requests.post(
         PANCHANG_URL,
         headers=headers,
@@ -227,10 +222,6 @@ def get_panchang():
         )
 
     output = result["output"]
-
-    # -------------------------------------------------
-    # SUNRISE / SUNSET
-    # -------------------------------------------------
 
     sun_response = requests.post(
         SUN_TIMES_URL,
@@ -1251,15 +1242,15 @@ def make_dashboard(
     centered(
         draw,
         "आज का संकल्प",
-        428,
+        426,
         tiny_font,
     )
 
     centered(
         draw,
         content["sankalp"],
-        447,
-        small_font,
+        443,
+        body_bold,
     )
 
     # -------------------------------------------------
@@ -1369,6 +1360,11 @@ def main():
 
     print(
         "Daily spiritual content selected."
+    )
+
+    print(
+        "Sankalp:",
+        content["sankalp"],
     )
 
     make_dashboard(
