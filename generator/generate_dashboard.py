@@ -44,6 +44,141 @@ def get_font(size, bold=False):
 
 
 # =================================================
+# DAILY SPIRITUAL CONTENT
+# =================================================
+
+DAILY_CONTENT = [
+
+    {
+        "shloka": [
+            "कर्मण्येवाधिकारस्ते",
+            "मा फलेषु कदाचन ।",
+        ],
+        "meaning": [
+            "अपने कर्म पर ध्यान दें;",
+            "उसके फल की चिंता न करें।",
+        ],
+        "message": [
+            "निष्ठा से किया गया कर्म",
+            "अपने आप में साधना है।",
+        ],
+        "sankalp": "आज कर्म पर ध्यान रखूँगा।",
+    },
+
+    {
+        "shloka": [
+            "उद्धरेदात्मनात्मानं",
+            "नात्मानमवसादयेत् ।",
+        ],
+        "meaning": [
+            "मनुष्य स्वयं को ऊपर उठाए;",
+            "स्वयं को नीचे न गिराए।",
+        ],
+        "message": [
+            "अपने विचारों को",
+            "प्रेम और धैर्य से सँवारें।",
+        ],
+        "sankalp": "आज स्वयं से प्रेम रखूँगा।",
+    },
+
+    {
+        "shloka": [
+            "योगस्थः कुरु कर्माणि",
+            "सङ्गं त्यक्त्वा धनञ्जय ।",
+        ],
+        "meaning": [
+            "समत्व में स्थित होकर कर्म करें;",
+            "आसक्ति छोड़कर आगे बढ़ें।",
+        ],
+        "message": [
+            "शांत मन से किया गया",
+            "कर्म अधिक सार्थक होता है।",
+        ],
+        "sankalp": "आज मन को शांत रखूँगा।",
+    },
+
+    {
+        "shloka": [
+            "विद्या विनयसम्पन्ने",
+            "ब्राह्मणे गवि हस्तिनि ।",
+        ],
+        "meaning": [
+            "ज्ञानी व्यक्ति सबमें",
+            "एक समान आत्मभाव देखता है।",
+        ],
+        "message": [
+            "सम्मान और करुणा से",
+            "हर व्यक्ति को देखें।",
+        ],
+        "sankalp": "आज सबका सम्मान करूँगा।",
+    },
+
+    {
+        "shloka": [
+            "अद्वेष्टा सर्वभूतानां",
+            "मैत्रः करुण एव च ।",
+        ],
+        "meaning": [
+            "सब प्राणियों से द्वेष न रखें;",
+            "मैत्री और करुणा रखें।",
+        ],
+        "message": [
+            "करुणा मन को हल्का",
+            "और जीवन को सुंदर बनाती है।",
+        ],
+        "sankalp": "आज करुणा से बोलूँगा।",
+    },
+
+    {
+        "shloka": [
+            "शान्ताकारं भुजगशयनं",
+            "पद्मनाभं सुरेशम् ।",
+        ],
+        "meaning": [
+            "शांत स्वरूप परमात्मा का",
+            "स्मरण मन को स्थिर करता है।",
+        ],
+        "message": [
+            "दिन की शुरुआत कुछ क्षण",
+            "शांति और स्मरण से करें।",
+        ],
+        "sankalp": "आज कुछ क्षण मौन रहूँगा।",
+    },
+
+    {
+        "shloka": [
+            "सर्वे भवन्तु सुखिनः",
+            "सर्वे सन्तु निरामयाः ।",
+        ],
+        "meaning": [
+            "सब सुखी हों;",
+            "सब निरोग और मंगलमय रहें।",
+        ],
+        "message": [
+            "अपनी प्रार्थना में",
+            "सबके कल्याण को स्थान दें।",
+        ],
+        "sankalp": "आज सबके मंगल की कामना करूँगा।",
+    },
+
+]
+
+
+def get_daily_content():
+
+    now = datetime.now(
+        ZoneInfo(TIMEZONE_NAME)
+    )
+
+    # Seven-day prototype rotation.
+    day_index = (
+        now.timetuple().tm_yday - 1
+    ) % len(DAILY_CONTENT)
+
+    return DAILY_CONTENT[day_index]
+
+
+# =================================================
 # API
 # =================================================
 
@@ -369,7 +504,6 @@ def draw_corner(
     sy,
 ):
 
-    # Main temple-style L
     draw.line(
         (
             x,
@@ -392,7 +526,6 @@ def draw_corner(
         width=2,
     )
 
-    # Inner step
     draw.line(
         (
             x + 5 * sx,
@@ -415,7 +548,6 @@ def draw_corner(
         width=1,
     )
 
-    # Small diamond
     cx = x + 17 * sx
     cy = y + 17 * sy
 
@@ -440,7 +572,6 @@ def draw_mandala(
     cy,
 ):
 
-    # Outer circle
     draw.ellipse(
         (
             cx - 56,
@@ -452,7 +583,6 @@ def draw_mandala(
         width=2,
     )
 
-    # Middle circle
     draw.ellipse(
         (
             cx - 48,
@@ -464,7 +594,6 @@ def draw_mandala(
         width=1,
     )
 
-    # Inner circle
     draw.ellipse(
         (
             cx - 38,
@@ -476,7 +605,6 @@ def draw_mandala(
         width=1,
     )
 
-    # Eight petals
     points = [
         (0, -42),
         (30, -30),
@@ -501,7 +629,6 @@ def draw_mandala(
             width=1,
         )
 
-    # Eight outer dots
     for dx, dy in [
         (0, -51),
         (36, -36),
@@ -610,7 +737,10 @@ def draw_divider_ornament(
 # DASHBOARD
 # =================================================
 
-def make_dashboard(data):
+def make_dashboard(
+    data,
+    content,
+):
 
     image = Image.new(
         "1",
@@ -640,10 +770,6 @@ def make_dashboard(data):
     body_bold = get_font(
         18,
         True,
-    )
-
-    body_font = get_font(
-        17,
     )
 
     small_font = get_font(
@@ -729,9 +855,6 @@ def make_dashboard(data):
         title_font,
     )
 
-    # Draw weekday + separator + date manually.
-    # This avoids unsupported Unicode bullet glyphs.
-
     weekday_text = panchang["weekday"]
 
     weekday_width = text_width(
@@ -747,7 +870,6 @@ def make_dashboard(data):
     )
 
     gap = 18
-
     separator_width = 8
 
     total_width = (
@@ -802,7 +924,6 @@ def make_dashboard(data):
         font=small_font,
     )
 
-    # Header rule
     draw.line(
         (
             48,
@@ -820,14 +941,12 @@ def make_dashboard(data):
 
     left_center = 205
 
-    # Smaller mandala for better breathing room.
     draw_mandala(
         draw,
         left_center,
         145,
     )
 
-    # Om
     om_font = get_font(
         57,
         True,
@@ -841,7 +960,6 @@ def make_dashboard(data):
         left_center,
     )
 
-    # Shiva
     centered(
         draw,
         "शिव",
@@ -850,7 +968,6 @@ def make_dashboard(data):
         left_center,
     )
 
-    # Mantra
     centered(
         draw,
         "ॐ नमः शिवाय",
@@ -860,7 +977,7 @@ def make_dashboard(data):
     )
 
     # -------------------------------------------------
-    # PANCHANG HEADER
+    # PANCHANG
     # -------------------------------------------------
 
     centered(
@@ -881,10 +998,6 @@ def make_dashboard(data):
         fill=0,
         width=1,
     )
-
-    # -------------------------------------------------
-    # PANCHANG ROWS
-    # -------------------------------------------------
 
     rows = [
         (
@@ -934,7 +1047,6 @@ def make_dashboard(data):
             font=small_font,
         )
 
-        # Dotted leader
         for x in range(
             110,
             275,
@@ -953,7 +1065,7 @@ def make_dashboard(data):
 
             draw_sun_icon(
                 draw,
-                290,
+                510 - 220,
                 y + 10,
             )
 
@@ -1068,13 +1180,13 @@ def make_dashboard(data):
     )
 
     right_text(
-        "कर्मण्येवाधिकारस्ते",
+        content["shloka"][0],
         149,
         body_bold,
     )
 
     right_text(
-        "मा फलेषु कदाचन ।",
+        content["shloka"][1],
         176,
         body_bold,
     )
@@ -1089,13 +1201,13 @@ def make_dashboard(data):
     )
 
     right_text(
-        "अपने कर्म पर ध्यान दें;",
+        content["meaning"][0],
         252,
         small_font,
     )
 
     right_text(
-        "उसके फल की चिंता न करें।",
+        content["meaning"][1],
         275,
         small_font,
     )
@@ -1110,13 +1222,13 @@ def make_dashboard(data):
     )
 
     right_text(
-        "धैर्य और निष्ठा से",
+        content["message"][0],
         349,
         small_font,
     )
 
     right_text(
-        "किया गया कर्म भी साधना है।",
+        content["message"][1],
         372,
         small_font,
     )
@@ -1144,7 +1256,7 @@ def make_dashboard(data):
     )
 
     # -------------------------------------------------
-    # RAW 1-BIT BITMAP
+    # RAW BITMAP
     # -------------------------------------------------
 
     pixels = image.load()
@@ -1176,8 +1288,7 @@ def make_dashboard(data):
                     )
 
                     # White pixel = 1.
-                    # Matches the current
-                    # ESP32 display configuration.
+                    # Matches current ESP32 configuration.
 
                     if pixels[x, y] == 1:
 
@@ -1247,8 +1358,15 @@ def main():
         ),
     )
 
+    content = get_daily_content()
+
+    print(
+        "Daily spiritual content selected."
+    )
+
     make_dashboard(
-        data
+        data,
+        content,
     )
 
     size = os.path.getsize(
