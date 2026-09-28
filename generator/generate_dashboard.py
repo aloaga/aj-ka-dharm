@@ -1065,7 +1065,7 @@ def make_dashboard(
 
             draw_sun_icon(
                 draw,
-                510 - 220,
+                290,
                 y + 10,
             )
 
@@ -1251,12 +1251,19 @@ def make_dashboard(
     centered(
         draw,
         "आज का संकल्प",
-        429,
+        428,
         tiny_font,
     )
 
+    centered(
+        draw,
+        content["sankalp"],
+        447,
+        small_font,
+    )
+
     # -------------------------------------------------
-    # RAW BITMAP
+    # RAW 1-BIT BITMAP
     # -------------------------------------------------
 
     pixels = image.load()
