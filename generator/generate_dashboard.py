@@ -71,6 +71,10 @@ def get_panchang():
         "Content-Type": "application/json",
     }
 
+    # -------------------------------------------------
+    # MAIN PANCHANG
+    # -------------------------------------------------
+
     response = requests.post(
         PANCHANG_URL,
         headers=headers,
@@ -88,6 +92,10 @@ def get_panchang():
         )
 
     output = result["output"]
+
+    # -------------------------------------------------
+    # SUNRISE / SUNSET
+    # -------------------------------------------------
 
     sun_response = requests.post(
         SUN_TIMES_URL,
@@ -330,11 +338,15 @@ def hindi_date():
         "०१२३४५६७८९",
     )
 
-    day = str(now.day).translate(
+    day = str(
+        now.day
+    ).translate(
         hindi_digits
     )
 
-    year = str(now.year).translate(
+    year = str(
+        now.year
+    ).translate(
         hindi_digits
     )
 
@@ -346,12 +358,18 @@ def hindi_date():
 
 
 # =================================================
-# DECORATIVE ART
+# DECORATIVE CORNERS
 # =================================================
 
-def draw_corner(draw, x, y, sx, sy):
+def draw_corner(
+    draw,
+    x,
+    y,
+    sx,
+    sy,
+):
 
-    # Main L-shaped temple flourish
+    # Main temple-style L
     draw.line(
         (
             x,
@@ -374,7 +392,7 @@ def draw_corner(draw, x, y, sx, sy):
         width=2,
     )
 
-    # Inner stepped flourish
+    # Inner step
     draw.line(
         (
             x + 5 * sx,
@@ -412,52 +430,62 @@ def draw_corner(draw, x, y, sx, sy):
     )
 
 
-def draw_mandala(draw, cx, cy):
+# =================================================
+# MANDALA
+# =================================================
 
-    # Outer circles
+def draw_mandala(
+    draw,
+    cx,
+    cy,
+):
+
+    # Outer circle
     draw.ellipse(
         (
-            cx - 67,
-            cy - 67,
-            cx + 67,
-            cy + 67,
+            cx - 56,
+            cy - 56,
+            cx + 56,
+            cy + 56,
         ),
         outline=0,
         width=2,
     )
 
+    # Middle circle
     draw.ellipse(
         (
-            cx - 58,
-            cy - 58,
-            cx + 58,
-            cy + 58,
+            cx - 48,
+            cy - 48,
+            cx + 48,
+            cy + 48,
         ),
         outline=0,
         width=1,
     )
 
+    # Inner circle
     draw.ellipse(
         (
-            cx - 46,
-            cy - 46,
-            cx + 46,
-            cy + 46,
+            cx - 38,
+            cy - 38,
+            cx + 38,
+            cy + 38,
         ),
         outline=0,
         width=1,
     )
 
-    # Eight radial petals
+    # Eight petals
     points = [
-        (0, -51),
-        (36, -36),
-        (51, 0),
-        (36, 36),
-        (0, 51),
-        (-36, 36),
-        (-51, 0),
-        (-36, -36),
+        (0, -42),
+        (30, -30),
+        (42, 0),
+        (30, 30),
+        (0, 42),
+        (-30, 30),
+        (-42, 0),
+        (-30, -30),
     ]
 
     for dx, dy in points:
@@ -473,16 +501,16 @@ def draw_mandala(draw, cx, cy):
             width=1,
         )
 
-    # Eight tiny dots
+    # Eight outer dots
     for dx, dy in [
-        (0, -61),
-        (43, -43),
-        (61, 0),
-        (43, 43),
-        (0, 61),
-        (-43, 43),
-        (-61, 0),
-        (-43, -43),
+        (0, -51),
+        (36, -36),
+        (51, 0),
+        (36, 36),
+        (0, 51),
+        (-36, 36),
+        (-51, 0),
+        (-36, -36),
     ]:
 
         draw.ellipse(
@@ -496,7 +524,15 @@ def draw_mandala(draw, cx, cy):
         )
 
 
-def draw_sun_icon(draw, cx, cy):
+# =================================================
+# SUN ICON
+# =================================================
+
+def draw_sun_icon(
+    draw,
+    cx,
+    cy,
+):
 
     draw.ellipse(
         (
@@ -528,7 +564,15 @@ def draw_sun_icon(draw, cx, cy):
         )
 
 
-def draw_divider_ornament(draw, x, y):
+# =================================================
+# CENTER DIVIDER ORNAMENT
+# =================================================
+
+def draw_divider_ornament(
+    draw,
+    x,
+    y,
+):
 
     draw.line(
         (
@@ -579,18 +623,45 @@ def make_dashboard(data):
 
     draw = ImageDraw.Draw(image)
 
-    title_font = get_font(29, True)
-    header_font = get_font(19, True)
-    body_bold = get_font(18, True)
-    body_font = get_font(17)
-    small_font = get_font(15)
-    tiny_font = get_font(14)
+    # -------------------------------------------------
+    # FONTS
+    # -------------------------------------------------
 
-    panchang = hindi_panchang(data)
+    title_font = get_font(
+        29,
+        True,
+    )
+
+    header_font = get_font(
+        19,
+        True,
+    )
+
+    body_bold = get_font(
+        18,
+        True,
+    )
+
+    body_font = get_font(
+        17,
+    )
+
+    small_font = get_font(
+        15,
+    )
+
+    tiny_font = get_font(
+        14,
+    )
+
+    panchang = hindi_panchang(
+        data
+    )
+
     date_display = hindi_date()
 
     # -------------------------------------------------
-    # FRAME
+    # OUTER FRAME
     # -------------------------------------------------
 
     draw.rectangle(
@@ -615,10 +686,37 @@ def make_dashboard(data):
         width=1,
     )
 
-    draw_corner(draw, 30, 30, 1, 1)
-    draw_corner(draw, WIDTH - 30, 30, -1, 1)
-    draw_corner(draw, 30, HEIGHT - 30, 1, -1)
-    draw_corner(draw, WIDTH - 30, HEIGHT - 30, -1, -1)
+    draw_corner(
+        draw,
+        30,
+        30,
+        1,
+        1,
+    )
+
+    draw_corner(
+        draw,
+        WIDTH - 30,
+        30,
+        -1,
+        1,
+    )
+
+    draw_corner(
+        draw,
+        30,
+        HEIGHT - 30,
+        1,
+        -1,
+    )
+
+    draw_corner(
+        draw,
+        WIDTH - 30,
+        HEIGHT - 30,
+        -1,
+        -1,
+    )
 
     # -------------------------------------------------
     # HEADER
@@ -631,13 +729,80 @@ def make_dashboard(data):
         title_font,
     )
 
-    centered(
+    # Draw weekday + separator + date manually.
+    # This avoids unsupported Unicode bullet glyphs.
+
+    weekday_text = panchang["weekday"]
+
+    weekday_width = text_width(
         draw,
-        f"{panchang['weekday']}  •  {date_display}",
-        57,
+        weekday_text,
         small_font,
     )
 
+    date_width = text_width(
+        draw,
+        date_display,
+        small_font,
+    )
+
+    gap = 18
+
+    separator_width = 8
+
+    total_width = (
+        weekday_width
+        + gap
+        + separator_width
+        + gap
+        + date_width
+    )
+
+    start_x = (
+        400
+        - total_width // 2
+    )
+
+    draw.text(
+        (
+            start_x,
+            57,
+        ),
+        weekday_text,
+        fill=0,
+        font=small_font,
+    )
+
+    separator_x = (
+        start_x
+        + weekday_width
+        + gap
+    )
+
+    draw.line(
+        (
+            separator_x,
+            63,
+            separator_x + 8,
+            63,
+        ),
+        fill=0,
+        width=2,
+    )
+
+    draw.text(
+        (
+            separator_x
+            + separator_width
+            + gap,
+            57,
+        ),
+        date_display,
+        fill=0,
+        font=small_font,
+    )
+
+    # Header rule
     draw.line(
         (
             48,
@@ -655,12 +820,14 @@ def make_dashboard(data):
 
     left_center = 205
 
+    # Smaller mandala for better breathing room.
     draw_mandala(
         draw,
         left_center,
         145,
     )
 
+    # Om
     om_font = get_font(
         57,
         True,
@@ -674,24 +841,26 @@ def make_dashboard(data):
         left_center,
     )
 
+    # Shiva
     centered(
         draw,
         "शिव",
-        181,
+        190,
         body_bold,
         left_center,
     )
 
+    # Mantra
     centered(
         draw,
         "ॐ नमः शिवाय",
-        208,
+        216,
         small_font,
         left_center,
     )
 
     # -------------------------------------------------
-    # PANCHANG
+    # PANCHANG HEADER
     # -------------------------------------------------
 
     centered(
@@ -713,6 +882,10 @@ def make_dashboard(data):
         width=1,
     )
 
+    # -------------------------------------------------
+    # PANCHANG ROWS
+    # -------------------------------------------------
+
     rows = [
         (
             "वार",
@@ -731,12 +904,18 @@ def make_dashboard(data):
         ),
         (
             "सूर्योदय",
-            data.get("sunrise", "—"),
+            data.get(
+                "sunrise",
+                "—",
+            ),
             True,
         ),
         (
             "सूर्यास्त",
-            data.get("sunset", "—"),
+            data.get(
+                "sunset",
+                "—",
+            ),
             True,
         ),
     ]
@@ -778,23 +957,13 @@ def make_dashboard(data):
                 y + 10,
             )
 
-            right_aligned(
-                draw,
-                value,
-                350,
-                y,
-                small_font,
-            )
-
-        else:
-
-            right_aligned(
-                draw,
-                value,
-                350,
-                y,
-                small_font,
-            )
+        right_aligned(
+            draw,
+            value,
+            350,
+            y,
+            small_font,
+        )
 
         y += 27
 
@@ -804,18 +973,6 @@ def make_dashboard(data):
 
     divider_x = 390
 
-    draw.line(
-        (
-            divider_x,
-            98,
-            divider_x,
-            421,
-        ),
-        fill=0,
-        width=1,
-    )
-
-    # Break the divider around ornament
     draw.line(
         (
             divider_x,
@@ -850,7 +1007,10 @@ def make_dashboard(data):
 
     right_center = 585
 
-    def right_header(text, y):
+    def right_header(
+        text,
+        y,
+    ):
 
         left = 425
         right = 745
@@ -875,7 +1035,8 @@ def make_dashboard(data):
 
         draw.text(
             (
-                right_center - width // 2,
+                right_center
+                - width // 2,
                 y + 2,
             ),
             text,
@@ -897,7 +1058,10 @@ def make_dashboard(data):
             right_center,
         )
 
+    # -------------------------------------------------
     # SHLOKA
+    # -------------------------------------------------
+
     right_header(
         "आज का श्लोक",
         105,
@@ -915,7 +1079,10 @@ def make_dashboard(data):
         body_bold,
     )
 
+    # -------------------------------------------------
     # MEANING
+    # -------------------------------------------------
+
     right_header(
         "अर्थ",
         211,
@@ -933,7 +1100,10 @@ def make_dashboard(data):
         small_font,
     )
 
+    # -------------------------------------------------
     # MESSAGE
+    # -------------------------------------------------
+
     right_header(
         "आज का संदेश",
         308,
@@ -974,7 +1144,7 @@ def make_dashboard(data):
     )
 
     # -------------------------------------------------
-    # WRITE RAW BITMAP
+    # RAW 1-BIT BITMAP
     # -------------------------------------------------
 
     pixels = image.load()
@@ -984,7 +1154,9 @@ def make_dashboard(data):
         "wb",
     ) as f:
 
-        for y in range(HEIGHT):
+        for y in range(
+            HEIGHT
+        ):
 
             for byte_x in range(
                 0,
@@ -994,21 +1166,33 @@ def make_dashboard(data):
 
                 value = 0
 
-                for bit in range(8):
+                for bit in range(
+                    8
+                ):
 
-                    x = byte_x + bit
+                    x = (
+                        byte_x
+                        + bit
+                    )
 
-                    # White = 1
+                    # White pixel = 1.
+                    # Matches the current
+                    # ESP32 display configuration.
+
                     if pixels[x, y] == 1:
 
                         value |= (
-                            1 << (
-                                7 - bit
+                            1
+                            << (
+                                7
+                                - bit
                             )
                         )
 
                 f.write(
-                    bytes([value])
+                    bytes(
+                        [value]
+                    )
                 )
 
 
@@ -1030,30 +1214,42 @@ def main():
 
     print(
         "Tithi:",
-        data.get("tithi"),
+        data.get(
+            "tithi"
+        ),
     )
 
     print(
         "Nakshatra:",
-        data.get("nakshatra"),
+        data.get(
+            "nakshatra"
+        ),
     )
 
     print(
         "Weekday:",
-        data.get("weekday"),
+        data.get(
+            "weekday"
+        ),
     )
 
     print(
         "Sunrise:",
-        data.get("sunrise"),
+        data.get(
+            "sunrise"
+        ),
     )
 
     print(
         "Sunset:",
-        data.get("sunset"),
+        data.get(
+            "sunset"
+        ),
     )
 
-    make_dashboard(data)
+    make_dashboard(
+        data
+    )
 
     size = os.path.getsize(
         "dashboard.bin"
@@ -1074,4 +1270,5 @@ def main():
 
 
 if __name__ == "__main__":
+
     main()
