@@ -44,6 +44,63 @@ def get_font(size, bold=False):
 
 
 # -------------------------------------------------
+# TIME EXTRACTION
+# -------------------------------------------------
+
+def extract_time(data, wanted_key):
+
+    if isinstance(data, dict):
+
+        for key, value in data.items():
+
+            if key.lower() == wanted_key.lower():
+
+                if isinstance(value, str):
+                    return value
+
+                if isinstance(value, (int, float)):
+                    return str(value)
+
+                if isinstance(value, dict):
+
+                    for subkey in [
+                        "time",
+                        "local",
+                        "formatted",
+                        "value",
+                    ]:
+
+                        if subkey in value:
+                            return str(
+                                value[subkey]
+                            )
+
+                return str(value)
+
+            result = extract_time(
+                value,
+                wanted_key,
+            )
+
+            if result != "—":
+                return result
+
+    elif isinstance(data, list):
+
+        for item in data:
+
+            result = extract_time(
+                item,
+                wanted_key,
+            )
+
+            if result != "—":
+                return result
+
+    return "—"
+
+
+# -------------------------------------------------
 # API
 # -------------------------------------------------
 
@@ -55,9 +112,6 @@ def get_panchang():
         ZoneInfo(TIMEZONE_NAME)
     )
 
-    # Use a time after sunrise so the
-    # sunrise-based weekday belongs to
-    # the intended calendar day.
     payload = {
         "year": now.year,
         "month": now.month,
@@ -113,11 +167,16 @@ def get_panchang():
 
     if sun_result.get("statusCode") != 200:
         raise RuntimeError(
-            f"Navamsha sun-times error: "
-            f"{sun_result}"
+            f"Navamsha sun-times error: {sun_result}"
         )
 
     sun_output = sun_result["output"]
+
+    # Diagnostic output.
+    # This lets us see the exact structure
+    # returned by Navamsha.
+    print("SUN TIMES RAW RESPONSE:")
+    print(sun_output)
 
     output["sunrise"] = extract_time(
         sun_output,
@@ -130,62 +189,6 @@ def get_panchang():
     )
 
     return output
-
-
-def extract_time(data, wanted_key):
-
-    """
-    Navamsha's response structure can evolve.
-    Search the returned JSON recursively for
-    the requested sunrise/sunset field.
-    """
-
-    if isinstance(data, dict):
-
-        for key, value in data.items():
-
-            if key.lower() == wanted_key.lower():
-
-                if isinstance(value, str):
-                    return value
-
-                if isinstance(value, dict):
-
-                    for subkey in [
-                        "time",
-                        "local",
-                        "formatted",
-                        "value",
-                    ]:
-
-                        if subkey in value:
-                            return str(
-                                value[subkey]
-                            )
-
-                return str(value)
-
-            result = extract_time(
-                value,
-                wanted_key,
-            )
-
-            if result != "—":
-                return result
-
-    elif isinstance(data, list):
-
-        for item in data:
-
-            result = extract_time(
-                item,
-                wanted_key,
-            )
-
-            if result != "—":
-                return result
-
-    return "—"
 
 
 # -------------------------------------------------
@@ -229,7 +232,7 @@ def centered(
 
 
 # -------------------------------------------------
-# HINDI PANCHANG TRANSLATIONS
+# HINDI PANCHANG
 # -------------------------------------------------
 
 def hindi_panchang(data):
@@ -349,16 +352,14 @@ def hindi_panchang(data):
     )
 
     return {
-
         "weekday": weekday_display,
         "tithi": tithi_display,
         "nakshatra": nakshatra_display,
-
     }
 
 
 # -------------------------------------------------
-# DATE
+# HINDI DATE
 # -------------------------------------------------
 
 def hindi_date():
@@ -401,12 +402,10 @@ def hindi_date():
         hindi_digits
     )
 
-    month = months_hi[
-        now.month
-    ]
-
     return (
-        f"{day} {month} {year}"
+        f"{day} "
+        f"{months_hi[now.month]} "
+        f"{year}"
     )
 
 
@@ -594,8 +593,6 @@ def make_dashboard(data):
         width=1,
     )
 
-    # Mandala dots
-
     for dx, dy in [
 
         (0, -48),
@@ -657,7 +654,7 @@ def make_dashboard(data):
     )
 
     # -------------------------------------------------
-    # PANCHANG HEADING
+    # PANCHANG
     # -------------------------------------------------
 
     centered(
@@ -766,8 +763,6 @@ def make_dashboard(data):
         width=2,
     )
 
-    # Small diamond ornament
-
     draw.polygon(
         [
             (
@@ -796,10 +791,7 @@ def make_dashboard(data):
 
     right_center = 585
 
-    def right_header(
-        text,
-        y,
-    ):
+    def right_header(text, y):
 
         left = 425
         right = 745
@@ -847,10 +839,6 @@ def make_dashboard(data):
             right_center,
         )
 
-    # -------------------------------------------------
-    # SHLOKA
-    # -------------------------------------------------
-
     right_header(
         "आज का श्लोक",
         105,
@@ -868,10 +856,6 @@ def make_dashboard(data):
         body_bold,
     )
 
-    # -------------------------------------------------
-    # MEANING
-    # -------------------------------------------------
-
     right_header(
         "अर्थ",
         215,
@@ -888,10 +872,6 @@ def make_dashboard(data):
         282,
         small_font,
     )
-
-    # -------------------------------------------------
-    # MESSAGE
-    # -------------------------------------------------
 
     right_header(
         "आज का संदेश",
@@ -960,8 +940,7 @@ def make_dashboard(data):
                     x = byte_x + bit
 
                     # White pixel = 1.
-                    # This matches the current
-                    # ESP32 drawBitmap configuration.
+                    # Matches current ESP32 configuration.
 
                     if pixels[x, y] == 1:
 
