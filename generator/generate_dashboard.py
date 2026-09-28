@@ -205,6 +205,10 @@ def get_panchang():
         "Content-Type": "application/json",
     }
 
+    # -------------------------------------------------
+    # MAIN PANCHANG
+    # -------------------------------------------------
+
     response = requests.post(
         PANCHANG_URL,
         headers=headers,
@@ -222,6 +226,10 @@ def get_panchang():
         )
 
     output = result["output"]
+
+    # -------------------------------------------------
+    # SUNRISE / SUNSET
+    # -------------------------------------------------
 
     sun_response = requests.post(
         SUN_TIMES_URL,
@@ -1242,15 +1250,15 @@ def make_dashboard(
     centered(
         draw,
         "आज का संकल्प",
-        426,
+        424,
         tiny_font,
     )
 
     centered(
         draw,
         content["sankalp"],
-        443,
-        body_bold,
+        441,
+        small_font,
     )
 
     # -------------------------------------------------
