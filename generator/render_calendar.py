@@ -484,7 +484,7 @@ def main():
 
     weekday_font = load_font(
         FONT_DEV_BOLD,
-        12,
+        18,
     )
 
     date_font = load_font(
@@ -494,12 +494,12 @@ def main():
 
     tithi_font = load_font(
         FONT_DEV_BOLD,
-        15,
+        18,
     )
 
     festival_font = load_font(
         FONT_DEV_BOLD,
-        15,
+        18,
     )
 
     # --------------------------------------------------------
