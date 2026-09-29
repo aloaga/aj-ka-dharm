@@ -1,0 +1,64 @@
+name: Test Calendar Data
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install requests
+
+      - name: Generate calendar data
+        env:
+          NAVAMSHA_API_KEY: ${{ secrets.NAVAMSHA_API_KEY }}
+        run: |
+          python generator/generate_calendar.py
+
+      - name: Show generated data
+        run: |
+          python - <<'PY'
+          import json
+
+          with open("calendar_data.json", encoding="utf-8") as f:
+              data = json.load(f)
+
+          print()
+          print("========================================")
+          print("CALENDAR DATA TEST")
+          print("========================================")
+          print("Month:", data["month_hindi"], data["year"])
+          print("Days:", len(data["days"]))
+          print()
+
+          for day in data["days"]:
+              print(
+                  day["date"],
+                  "|",
+                  day["weekday"],
+                  "|",
+                  day["paksha"],
+                  day["tithi"],
+                  "|",
+                  day["sunrise"],
+                  "-",
+                  day["sunset"],
+              )
+
+          print()
+          print("Calendar data generated successfully.")
+          PY
