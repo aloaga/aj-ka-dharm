@@ -216,55 +216,80 @@ def draw_border(draw):
 
 
 # ============================================================
-# SUNRISE ICON
-# Sun emerging ABOVE the horizon
+# SIMPLE SUN ICON
 # ============================================================
 
-def draw_sunrise_icon(
+def draw_sun_icon(
     draw,
     x,
     y,
 ):
-    # Horizon
-    draw.line(
+    """
+    Clean classic sun.
+    Slightly larger than the previous version.
+    """
+
+    cx = x + 14
+    cy = y + 14
+    radius = 7
+
+    # Sun body
+    draw.ellipse(
         (
-            x,
-            y + 21,
-            x + 26,
-            y + 21,
+            cx - radius,
+            cy - radius,
+            cx + radius,
+            cy + radius,
         ),
-        fill=0,
+        outline=0,
         width=2,
     )
 
-    # Half sun above horizon
-    draw.arc(
-        (
-            x + 6,
-            y + 7,
-            x + 20,
-            y + 21,
-        ),
-        180,
-        360,
-        fill=0,
-        width=2,
-    )
-
-    # Rising rays
+    # Rays
     rays = [
-        (13, 1, 13, 5),
-        (5, 6, 8, 9),
-        (21, 6, 18, 9),
+        (cx, cy - 17, cx, cy - 11),
+        (cx, cy + 11, cx, cy + 17),
+
+        (cx - 17, cy, cx - 11, cy),
+        (cx + 11, cy, cx + 17, cy),
+
+        (
+            cx - 12,
+            cy - 12,
+            cx - 8,
+            cy - 8,
+        ),
+
+        (
+            cx + 8,
+            cy + 8,
+            cx + 12,
+            cy + 12,
+        ),
+
+        (
+            cx + 8,
+            cy - 8,
+            cx + 12,
+            cy - 12,
+        ),
+
+        (
+            cx - 12,
+            cy + 12,
+            cx - 8,
+            cy + 8,
+        ),
     ]
 
     for x1, y1, x2, y2 in rays:
+
         draw.line(
             (
-                x + x1,
-                y + y1,
-                x + x2,
-                y + y2,
+                x1,
+                y1,
+                x2,
+                y2,
             ),
             fill=0,
             width=2,
@@ -272,156 +297,45 @@ def draw_sunrise_icon(
 
 
 # ============================================================
-# SUNSET ICON
-# Sun descending BELOW the horizon
+# PROPER HALF-MOON / CRESCENT ICON
 # ============================================================
 
-def draw_sunset_icon(
+def draw_moon_icon(
     draw,
     x,
     y,
 ):
-    # Horizon
-    draw.line(
+    """
+    Clean crescent / half-moon.
+
+    Constructed from overlapping circles so it remains
+    recognizable on a monochrome e-paper display.
+    """
+
+    cx = x + 13
+    cy = y + 13
+
+    # Outer moon
+    draw.ellipse(
         (
-            x,
-            y + 4,
-            x + 26,
-            y + 4,
+            cx - 12,
+            cy - 12,
+            cx + 12,
+            cy + 12,
         ),
         fill=0,
-        width=2,
     )
 
-    # Half sun below horizon
-    draw.arc(
+    # Cut-out circle shifted right.
+    # This creates a strong crescent shape.
+    draw.ellipse(
         (
-            x + 6,
-            y + 4,
-            x + 20,
-            y + 18,
+            cx - 4,
+            cy - 12,
+            cx + 15,
+            cy + 12,
         ),
-        0,
-        180,
-        fill=0,
-        width=2,
-    )
-
-    # Descending rays
-    rays = [
-        (13, 20, 13, 24),
-        (5, 17, 8, 14),
-        (21, 17, 18, 14),
-    ]
-
-    for x1, y1, x2, y2 in rays:
-        draw.line(
-            (
-                x + x1,
-                y + y1,
-                x + x2,
-                y + y2,
-            ),
-            fill=0,
-            width=2,
-        )
-
-
-# ============================================================
-# MOONRISE ICON
-# Crescent emerging ABOVE the horizon
-# ============================================================
-
-def draw_moonrise_icon(
-    draw,
-    x,
-    y,
-):
-    # Horizon
-    draw.line(
-        (
-            x,
-            y + 21,
-            x + 26,
-            y + 21,
-        ),
-        fill=0,
-        width=2,
-    )
-
-    # Crescent above horizon
-    draw.arc(
-        (
-            x + 5,
-            y + 2,
-            x + 21,
-            y + 20,
-        ),
-        55,
-        305,
-        fill=0,
-        width=2,
-    )
-
-    # Rising indicator
-    draw.line(
-        (
-            x + 13,
-            y + 24,
-            x + 13,
-            y + 19,
-        ),
-        fill=0,
-        width=2,
-    )
-
-
-# ============================================================
-# MOONSET ICON
-# Crescent descending BELOW the horizon
-# ============================================================
-
-def draw_moonset_icon(
-    draw,
-    x,
-    y,
-):
-    # Horizon
-    draw.line(
-        (
-            x,
-            y + 4,
-            x + 26,
-            y + 4,
-        ),
-        fill=0,
-        width=2,
-    )
-
-    # Crescent below horizon
-    draw.arc(
-        (
-            x + 5,
-            y + 5,
-            x + 21,
-            y + 23,
-        ),
-        55,
-        305,
-        fill=0,
-        width=2,
-    )
-
-    # Descending indicator
-    draw.line(
-        (
-            x + 13,
-            y,
-            x + 13,
-            y + 6,
-        ),
-        fill=0,
-        width=2,
+        fill=1,
     )
 
 
@@ -670,15 +584,15 @@ def main():
     )
 
     # --------------------------------------------------------
-    # Sunrise
+    # LEFT — SUN
     # --------------------------------------------------------
 
     first_day = days[0]
 
-    draw_sunrise_icon(
+    draw_sun_icon(
         draw,
-        34,
-        34,
+        32,
+        32,
     )
 
     draw.text(
@@ -689,16 +603,6 @@ def main():
         first_day["sunrise"],
         font=time_font,
         fill=0,
-    )
-
-    # --------------------------------------------------------
-    # Sunset
-    # --------------------------------------------------------
-
-    draw_sunset_icon(
-        draw,
-        34,
-        63,
     )
 
     draw.text(
@@ -712,13 +616,13 @@ def main():
     )
 
     # --------------------------------------------------------
-    # Moonrise
+    # RIGHT — MOON
     # --------------------------------------------------------
 
-    draw_moonrise_icon(
+    draw_moon_icon(
         draw,
-        690,
-        34,
+        689,
+        32,
     )
 
     draw.text(
@@ -729,16 +633,6 @@ def main():
         first_day["moonrise"],
         font=time_font,
         fill=0,
-    )
-
-    # --------------------------------------------------------
-    # Moonset
-    # --------------------------------------------------------
-
-    draw_moonset_icon(
-        draw,
-        690,
-        63,
     )
 
     draw.text(
@@ -907,7 +801,7 @@ def main():
             )
 
             # ------------------------------------------------
-            # Tithi — RIGHT OF DATE
+            # Tithi
             # ------------------------------------------------
 
             tithi = item.get(
@@ -953,7 +847,7 @@ def main():
             )
 
             # ------------------------------------------------
-            # Festival — BELOW
+            # Festival
             # ------------------------------------------------
 
             festival = item.get(
