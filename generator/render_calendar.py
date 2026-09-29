@@ -483,7 +483,7 @@ def main():
     # Festival is deliberately larger and bolder.
     festival_font = load_font(
         FONT_DEV_BOLD,
-        9,
+        10,
     )
 
     # --------------------------------------------------------
