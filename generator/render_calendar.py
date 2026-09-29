@@ -504,7 +504,7 @@ def main():
     draw_border(draw)
 
     # ========================================================
-    # HEADER — PROFESSIONAL BALANCED LAYOUT
+    # HEADER — PREMIUM BALANCED LAYOUT
     # ========================================================
 
     hindu_month = hindu_month_label(
@@ -514,8 +514,19 @@ def main():
 
     title_text = f"{month_hindi} {year}"
 
-    # Measure the two title components separately so that
-    # "भाद्रपद — आश्विन" sits immediately before the month.
+    # The header is divided into three balanced visual zones:
+    #
+    #   LEFT  : sun + two times
+    #   CENTER: swastik + Hindu month + main month title + swastik
+    #   RIGHT : moon + two times
+    #
+    # The zones have equal visual breathing room and the
+    # astronomical information is vertically centered.
+
+    # --------------------------------------------------------
+    # Center title group
+    # --------------------------------------------------------
+
     hindu_box = draw.textbbox(
         (0, 0),
         hindu_month,
@@ -528,87 +539,115 @@ def main():
         font=title_font,
     )
 
-    hindu_width = hindu_box[2] - hindu_box[0]
-    title_width = title_box[2] - title_box[0]
+    hindu_width = (
+        hindu_box[2] - hindu_box[0]
+    )
 
-    title_gap = 9
+    title_width = (
+        title_box[2] - title_box[0]
+    )
 
-    combined_width = (
-        hindu_width
+    title_gap = 10
+    swastik_size = 24
+    swastik_gap = 20
+
+    center_group_width = (
+        swastik_size
+        + swastik_gap
+        + hindu_width
         + title_gap
         + title_width
+        + swastik_gap
+        + swastik_size
     )
 
-    title_start_x = (
-        400
-        - combined_width // 2
+    center_start_x = (
+        (WIDTH - center_group_width) // 2
     )
 
-    # Center both title elements vertically in the header.
-    title_y = 22
+    center_y = 43
+
+    # Left swastik
+    draw_swastik(
+        draw,
+        center_start_x,
+        32,
+        size=swastik_size,
+    )
+
+    # Hindu month
+    hindu_x = (
+        center_start_x
+        + swastik_size
+        + swastik_gap
+    )
+
+    hindu_y = 43
+
+    hindu_bbox = draw.textbbox(
+        (0, 0),
+        hindu_month,
+        font=hindu_month_header_font,
+    )
+
+    hindu_h = (
+        hindu_bbox[3] - hindu_bbox[1]
+    )
 
     draw.text(
         (
-            title_start_x,
-            title_y + 8,
+            hindu_x,
+            hindu_y - hindu_h // 2,
         ),
         hindu_month,
         font=hindu_month_header_font,
         fill=0,
     )
 
+    # Main month title
+    title_x = (
+        hindu_x
+        + hindu_width
+        + title_gap
+    )
+
+    title_bbox = draw.textbbox(
+        (0, 0),
+        title_text,
+        font=title_font,
+    )
+
+    title_h = (
+        title_bbox[3] - title_bbox[1]
+    )
+
     draw.text(
         (
-            title_start_x
-            + hindu_width
-            + title_gap,
-            title_y,
+            title_x,
+            center_y - title_h // 2,
         ),
         title_text,
         font=title_font,
         fill=0,
     )
 
-    # ========================================================
-    # HEADER — SWASTIKS
-    # ========================================================
-
-    draw_swastik(
-        draw,
-        198,
-        38,
-        size=24,
+    # Right swastik
+    right_swastik_x = (
+        title_x
+        + title_width
+        + swastik_gap
     )
 
     draw_swastik(
         draw,
-        578,
-        38,
-        size=24,
+        right_swastik_x,
+        32,
+        size=swastik_size,
     )
 
-    # ========================================================
-    # HEADER — SUN
-    # ========================================================
-
-    # Left and right sections are deliberately symmetric.
-    draw.line(
-        (185, 28, 185, 76),
-        fill=0,
-        width=1,
-    )
-
-    draw.line(
-        (615, 28, 615, 76),
-        fill=0,
-        width=1,
-    )
-
-    draw_sun_icon(
-        draw,
-        34,
-        31,
-    )
+    # --------------------------------------------------------
+    # Symmetric astronomical information blocks
+    # --------------------------------------------------------
 
     sunrise = format_time_12h(
         days[0].get("sunrise", "")
@@ -616,30 +655,6 @@ def main():
 
     sunset = format_time_12h(
         days[0].get("sunset", "")
-    )
-
-    draw.text(
-        (69, 36),
-        sunrise,
-        font=time_font,
-        fill=0,
-    )
-
-    draw.text(
-        (69, 62),
-        sunset,
-        font=time_font,
-        fill=0,
-    )
-
-    # ========================================================
-    # HEADER — MOON
-    # ========================================================
-
-    draw_moon_icon(
-        draw,
-        655,
-        31,
     )
 
     moonrise = format_time_12h(
@@ -650,8 +665,40 @@ def main():
         days[0].get("moonset", "")
     )
 
-    # Right-align the times against a fixed right margin.
-    right_time_edge = 781
+    # Left block occupies 25% of the header.
+    # Right block mirrors it exactly.
+    left_icon_x = 45
+    left_times_x = 83
+
+    right_icon_x = 690
+
+    draw_sun_icon(
+        draw,
+        left_icon_x,
+        31,
+    )
+
+    draw.text(
+        (left_times_x, 35),
+        sunrise,
+        font=time_font,
+        fill=0,
+    )
+
+    draw.text(
+        (left_times_x, 62),
+        sunset,
+        font=time_font,
+        fill=0,
+    )
+
+    draw_moon_icon(
+        draw,
+        right_icon_x,
+        31,
+    )
+
+    right_time_edge = 780
 
     moonrise_box = draw.textbbox(
         (0, 0),
@@ -679,7 +726,7 @@ def main():
         (
             right_time_edge
             - moonrise_width,
-            36,
+            35,
         ),
         moonrise,
         font=time_font,
