@@ -494,12 +494,12 @@ def main():
 
     tithi_font = load_font(
         FONT_DEV_BOLD,
-        11,
+        13,
     )
 
     festival_font = load_font(
         FONT_DEV_BOLD,
-        11,
+        13,
     )
 
     # --------------------------------------------------------
