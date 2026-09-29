@@ -48,7 +48,10 @@ FONT_LATIN_BOLD = (
 
 
 def load_font(path, size):
-    return ImageFont.truetype(path, size)
+    return ImageFont.truetype(
+        path,
+        size
+    )
 
 
 # ============================================================
@@ -224,16 +227,10 @@ def draw_sun_icon(
     x,
     y,
 ):
-    """
-    Clean classic sun.
-    Slightly larger than the previous version.
-    """
-
     cx = x + 14
     cy = y + 14
     radius = 7
 
-    # Sun body
     draw.ellipse(
         (
             cx - radius,
@@ -245,35 +242,29 @@ def draw_sun_icon(
         width=2,
     )
 
-    # Rays
     rays = [
         (cx, cy - 17, cx, cy - 11),
         (cx, cy + 11, cx, cy + 17),
-
         (cx - 17, cy, cx - 11, cy),
         (cx + 11, cy, cx + 17, cy),
-
         (
             cx - 12,
             cy - 12,
             cx - 8,
             cy - 8,
         ),
-
         (
             cx + 8,
             cy + 8,
             cx + 12,
             cy + 12,
         ),
-
         (
             cx + 8,
             cy - 8,
             cx + 12,
             cy - 12,
         ),
-
         (
             cx - 12,
             cy + 12,
@@ -305,17 +296,10 @@ def draw_moon_icon(
     x,
     y,
 ):
-    """
-    Clean crescent / half-moon.
-
-    Constructed from overlapping circles so it remains
-    recognizable on a monochrome e-paper display.
-    """
-
     cx = x + 13
     cy = y + 13
 
-    # Outer moon
+    # Solid outer moon
     draw.ellipse(
         (
             cx - 12,
@@ -326,8 +310,7 @@ def draw_moon_icon(
         fill=0,
     )
 
-    # Cut-out circle shifted right.
-    # This creates a strong crescent shape.
+    # White cut-out creates the crescent
     draw.ellipse(
         (
             cx - 4,
@@ -413,9 +396,6 @@ def build_grid(days):
     while len(grid) % 7 != 0:
         grid.append(None)
 
-    while len(grid) < 42:
-        grid.append(None)
-
     return [
         grid[i:i + 7]
         for i in range(
@@ -476,48 +456,50 @@ def main():
         image
     )
 
-    # --------------------------------------------------------
-    # Fonts
-    # --------------------------------------------------------
+    # ========================================================
+    # FONTS
+    #
+    # Increased by 1 point from the previous version.
+    # ========================================================
 
     title_font = load_font(
         FONT_DEV_BOLD,
-        27,
+        28,
     )
 
     subtitle_hindi_font = load_font(
         FONT_DEV_REGULAR,
-        13,
+        14,
     )
 
     subtitle_latin_font = load_font(
         FONT_LATIN,
-        12,
+        13,
     )
 
     time_font = load_font(
         FONT_LATIN_BOLD,
-        13,
+        14,
     )
 
     weekday_font = load_font(
         FONT_DEV_BOLD,
-        11,
+        12,
     )
 
     date_font = load_font(
         FONT_LATIN_BOLD,
-        19,
+        20,
     )
 
     tithi_font = load_font(
         FONT_DEV_BOLD,
-        10,
+        11,
     )
 
     festival_font = load_font(
         FONT_DEV_BOLD,
-        10,
+        11,
     )
 
     # --------------------------------------------------------
@@ -526,15 +508,15 @@ def main():
 
     draw_border(draw)
 
-    # --------------------------------------------------------
-    # Header
-    # --------------------------------------------------------
+    # ========================================================
+    # HEADER
+    # ========================================================
 
     center_text(
         draw,
         (
             220,
-            22,
+            21,
             580,
             57,
         ),
@@ -553,7 +535,7 @@ def main():
             280,
             56,
             445,
-            76,
+            77,
         ),
         MONTHS_EN[month],
         subtitle_latin_font,
@@ -565,7 +547,7 @@ def main():
             445,
             56,
             625,
-            76,
+            77,
         ),
         f"|  {hindu_month}",
         subtitle_hindi_font,
@@ -583,9 +565,9 @@ def main():
         49,
     )
 
-    # --------------------------------------------------------
-    # LEFT — SUN
-    # --------------------------------------------------------
+    # ========================================================
+    # HEADER — SUN
+    # ========================================================
 
     first_day = days[0]
 
@@ -598,7 +580,7 @@ def main():
     draw.text(
         (
             64,
-            38,
+            37,
         ),
         first_day["sunrise"],
         font=time_font,
@@ -608,16 +590,16 @@ def main():
     draw.text(
         (
             64,
-            67,
+            66,
         ),
         first_day["sunset"],
         font=time_font,
         fill=0,
     )
 
-    # --------------------------------------------------------
-    # RIGHT — MOON
-    # --------------------------------------------------------
+    # ========================================================
+    # HEADER — MOON
+    # ========================================================
 
     draw_moon_icon(
         draw,
@@ -628,7 +610,7 @@ def main():
     draw.text(
         (
             720,
-            38,
+            37,
         ),
         first_day["moonrise"],
         font=time_font,
@@ -638,7 +620,7 @@ def main():
     draw.text(
         (
             720,
-            67,
+            66,
         ),
         first_day["moonset"],
         font=time_font,
@@ -654,8 +636,20 @@ def main():
     grid_w = 750
 
     weekday_h = 27
+
     cell_w = grid_w // 7
-    cell_h = 56
+
+    # Available space from the bottom of the weekday
+    # header to the inside of the lower border.
+    calendar_bottom = HEIGHT - 15
+
+    calendar_height = (
+        calendar_bottom
+        - (
+            grid_y
+            + weekday_h
+        )
+    )
 
     weekdays = [
         "रविवार",
@@ -710,17 +704,45 @@ def main():
         )
 
     # ========================================================
-    # CALENDAR CELLS
+    # CALENDAR GRID
     # ========================================================
 
     grid = build_grid(days)
+
+    row_count = len(grid)
+
+    # Dynamic row height:
+    #
+    # September 2026 = 5 rows -> approximately 70 px
+    # Six-row months -> approximately 58 px
+    #
+    # This uses the formerly empty sixth-row space while
+    # keeping the calendar valid for every month.
+    cell_h = calendar_height // row_count
 
     y = (
         grid_y
         + weekday_h
     )
 
-    for row in grid:
+    for row_index, row in enumerate(
+        grid
+    ):
+
+        # Make the final row end exactly on the
+        # inner border instead of accumulating rounding error.
+        if row_index == row_count - 1:
+            row_y2 = calendar_bottom
+        else:
+            row_y2 = (
+                y
+                + cell_h
+            )
+
+        actual_cell_h = (
+            row_y2
+            - y
+        )
 
         for column, item in enumerate(
             row
@@ -737,11 +759,11 @@ def main():
                 - 1
             )
 
-            y2 = (
-                y
-                + cell_h
-                - 1
-            )
+            y2 = row_y2 - 1
+
+            # ------------------------------------------------
+            # Cell outline
+            # ------------------------------------------------
 
             draw.rectangle(
                 (
@@ -766,6 +788,10 @@ def main():
                 == today_string
             )
 
+            # ------------------------------------------------
+            # Current-day highlight
+            # ------------------------------------------------
+
             if is_today:
 
                 draw.rectangle(
@@ -784,25 +810,25 @@ def main():
 
                 text_fill = 0
 
-            # ------------------------------------------------
-            # Date
-            # ------------------------------------------------
+            # =================================================
+            # DATE — LARGE LEFT
+            # =================================================
 
-            date_x = x1 + 6
+            date_x = x1 + 7
 
             draw.text(
                 (
                     date_x,
-                    y + 3,
+                    y + 4,
                 ),
                 str(item["day"]),
                 font=date_font,
                 fill=text_fill,
             )
 
-            # ------------------------------------------------
-            # Tithi
-            # ------------------------------------------------
+            # =================================================
+            # TITHI — RIGHT OF DATE
+            # =================================================
 
             tithi = item.get(
                 "tithi",
@@ -825,12 +851,13 @@ def main():
 
             tithi_x = (
                 x2
-                - 6
+                - 7
                 - tithi_width
             )
 
             minimum_tithi_x = (
-                date_x + 34
+                date_x
+                + 38
             )
 
             if tithi_x < minimum_tithi_x:
@@ -839,16 +866,16 @@ def main():
             draw.text(
                 (
                     tithi_x,
-                    y + 7,
+                    y + 8,
                 ),
                 tithi,
                 font=tithi_font,
                 fill=text_fill,
             )
 
-            # ------------------------------------------------
-            # Festival
-            # ------------------------------------------------
+            # =================================================
+            # FESTIVAL — BELOW
+            # =================================================
 
             festival = item.get(
                 "festival",
@@ -857,8 +884,13 @@ def main():
 
             if festival:
 
-                festival_left = x1 + 6
-                festival_right = x2 - 6
+                festival_left = (
+                    x1 + 7
+                )
+
+                festival_right = (
+                    x2 - 7
+                )
 
                 available_width = (
                     festival_right
@@ -894,17 +926,27 @@ def main():
                     ) // 2
                 )
 
+                # Give the festival a little more
+                # vertical breathing room.
+                festival_y = (
+                    y
+                    + min(
+                        36,
+                        actual_cell_h - 23,
+                    )
+                )
+
                 draw.text(
                     (
                         festival_x,
-                        y + 33,
+                        festival_y,
                     ),
                     festival_text,
                     font=festival_font,
                     fill=text_fill,
                 )
 
-        y += cell_h
+        y = row_y2
 
     # ========================================================
     # RAW 1-BIT BITMAP
@@ -952,6 +994,12 @@ def main():
     )
     print(
         f"Today: {today_string}"
+    )
+    print(
+        f"Rows: {row_count}"
+    )
+    print(
+        f"Cell height: {cell_h}"
     )
     print(
         f"Output: {OUTPUT_FILE}"
