@@ -75,10 +75,64 @@ PAKSHA_HI = {
 
 
 # ============================================================
+# BASIC TITHI-BASED FESTIVALS / VRATS
+# ============================================================
+
+def get_basic_festival(
+    tithi_name,
+    paksha_name,
+):
+    """
+    Returns a basic festival/vrat label when it can be
+    determined directly from the tithi and paksha.
+
+    More complex festivals will be added later using
+    year-specific rules.
+    """
+
+    # Ekadashi occurs twice in a lunar month.
+    if tithi_name == "Ekadashi":
+        return "एकादशी व्रत"
+
+    # Purnima
+    if tithi_name == "Purnima":
+        return "पूर्णिमा व्रत"
+
+    # Amavasya
+    if tithi_name == "Amavasya":
+        return "अमावस्या"
+
+    # Pradosh is associated with Trayodashi.
+    if tithi_name == "Trayodashi":
+        return "प्रदोष व्रत"
+
+    # Chaturthi is traditionally observed as a vrat.
+    if tithi_name == "Chaturthi":
+        if paksha_name == "Krishna":
+            return "संकष्टी चतुर्थी"
+        else:
+            return "चतुर्थी व्रत"
+
+    # Ashtami
+    if tithi_name == "Ashtami":
+        return "अष्टमी व्रत"
+
+    # Chaturdashi
+    if tithi_name == "Chaturdashi":
+        if paksha_name == "Krishna":
+            return "मासिक शिवरात्रि"
+        else:
+            return "चतुर्दशी व्रत"
+
+    return ""
+
+
+# ============================================================
 # NAVAMSHA API HELPER
 # ============================================================
 
 def api_post(endpoint, payload, api_key):
+
     url = f"{API_URL}/{endpoint}"
 
     response = requests.post(
@@ -109,6 +163,7 @@ def api_post(endpoint, payload, api_key):
 # ============================================================
 
 def get_sun_times(day, api_key):
+
     payload = {
         "year": day.year,
         "month": day.month,
@@ -132,6 +187,7 @@ def get_sun_times(day, api_key):
 # ============================================================
 
 def get_moon_times(day, api_key):
+
     payload = {
         "year": day.year,
         "month": day.month,
@@ -159,13 +215,12 @@ def get_panchang_at_sunrise(
     sunrise_local,
     api_key,
 ):
+
     sunrise_time = datetime.strptime(
         sunrise_local,
         "%H:%M",
     )
 
-    # Check one minute after sunrise so the
-    # Panchang represents the sunrise period.
     check_time = sunrise_time + timedelta(
         minutes=1
     )
@@ -193,15 +248,6 @@ def get_panchang_at_sunrise(
 # ============================================================
 
 def extract_time(value):
-    """
-    Converts Navamsha datetime strings such as:
-
-        2026-09-29T05:27:00+05:30
-
-    into:
-
-        05:27
-    """
 
     if not value:
         return ""
@@ -224,9 +270,9 @@ def build_day(day, api_key):
         f"  Fetching {day.isoformat()}..."
     )
 
-    # -------------------------
+    # --------------------------------------------------------
     # Sun
-    # -------------------------
+    # --------------------------------------------------------
 
     sun = get_sun_times(
         day,
@@ -241,9 +287,9 @@ def build_day(day, api_key):
         sun["set"]["local_datetime"]
     )
 
-    # -------------------------
+    # --------------------------------------------------------
     # Panchang
-    # -------------------------
+    # --------------------------------------------------------
 
     panchang = get_panchang_at_sunrise(
         day,
@@ -263,9 +309,9 @@ def build_day(day, api_key):
         "",
     )
 
-    # -------------------------
+    # --------------------------------------------------------
     # Moon
-    # -------------------------
+    # --------------------------------------------------------
 
     moon = get_moon_times(
         day,
@@ -273,11 +319,11 @@ def build_day(day, api_key):
     )
 
     moonrise = ""
+
     moonset = ""
 
-    # Navamsha returns rise/set objects
-    # similar to the sun-times response.
     if moon.get("rise"):
+
         moonrise = extract_time(
             moon["rise"].get(
                 "local_datetime"
@@ -285,23 +331,38 @@ def build_day(day, api_key):
         )
 
     if moon.get("set"):
+
         moonset = extract_time(
             moon["set"].get(
                 "local_datetime"
             )
         )
 
-    # -------------------------
-    # Final day record
-    # -------------------------
+    # --------------------------------------------------------
+    # Festival / vrat
+    # --------------------------------------------------------
+
+    festival = get_basic_festival(
+        tithi_name,
+        paksha_name,
+    )
+
+    # --------------------------------------------------------
+    # Final record
+    # --------------------------------------------------------
 
     return {
+
         "date": day.isoformat(),
+
         "day": day.day,
+
         "weekday": WEEKDAYS_HI[
             day.weekday()
         ],
+
         "month": day.month,
+
         "year": day.year,
 
         "tithi": TITHI_HI.get(
@@ -315,14 +376,14 @@ def build_day(day, api_key):
         ),
 
         "sunrise": sunrise,
+
         "sunset": sunset,
 
         "moonrise": moonrise,
+
         "moonset": moonset,
 
-        # Festival data will be added
-        # in the next stage.
-        "festival": "",
+        "festival": festival,
     }
 
 
@@ -337,6 +398,7 @@ def main():
     )
 
     if not api_key:
+
         raise RuntimeError(
             "NAVAMSHA_API_KEY GitHub secret "
             "was not found."
@@ -345,6 +407,7 @@ def main():
     today = datetime.now().date()
 
     year = today.year
+
     month = today.month
 
     days_in_month = calendar.monthrange(
@@ -353,24 +416,31 @@ def main():
     )[1]
 
     print()
+
     print(
         "========================================"
     )
+
     print(
         "AJ KA DHARM — CALENDAR DATA"
     )
+
     print(
         "========================================"
     )
+
     print(
         f"Month: {MONTHS_HI[month]} {year}"
     )
+
     print(
-        f"Location: Kolkata"
+        "Location: Kolkata"
     )
+
     print(
         f"Days: {days_in_month}"
     )
+
     print()
 
     days = []
@@ -394,16 +464,23 @@ def main():
         )
 
     calendar_data = {
+
         "year": year,
+
         "month": month,
+
         "month_hindi": MONTHS_HI[
             month
         ],
+
         "timezone": TIMEZONE_NAME,
 
         "location": {
+
             "city": "Kolkata",
+
             "latitude": LATITUDE,
+
             "longitude": LONGITUDE,
         },
 
@@ -424,52 +501,55 @@ def main():
         )
 
     print()
+
     print(
         "========================================"
     )
+
     print(
         "CALENDAR DATA CREATED"
     )
+
     print(
         "========================================"
     )
+
     print(
         f"Output: {OUTPUT_FILE}"
     )
+
     print(
         f"Days generated: {len(days)}"
     )
-    print()
-
-    # Print the first day's timing data
-    # so we can easily inspect the result.
-    first_day = days[0]
-
-    print(
-        "First day timing check:"
-    )
-
-    print(
-        f"Sunrise : {first_day['sunrise']}"
-    )
-
-    print(
-        f"Sunset  : {first_day['sunset']}"
-    )
-
-    print(
-        f"Moonrise: {first_day['moonrise']}"
-    )
-
-    print(
-        f"Moonset : {first_day['moonset']}"
-    )
 
     print()
+
+    # --------------------------------------------------------
+    # Show festival results
+    # --------------------------------------------------------
+
+    print(
+        "Festival / vrat dates:"
+    )
+
+    for item in days:
+
+        if item["festival"]:
+
+            print(
+                f"{item['date']} | "
+                f"{item['paksha']} "
+                f"{item['tithi']} | "
+                f"{item['festival']}"
+            )
+
+    print()
+
     print(
         "Calendar data generated successfully."
     )
 
 
 if __name__ == "__main__":
+
     main()
