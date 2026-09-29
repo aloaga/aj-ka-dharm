@@ -434,11 +434,20 @@ def main():
 
     month_hindi = data["month_hindi"]
 
-    today = datetime.now(
-        TIMEZONE
-    ).date()
+    # --------------------------------------------------------
+    # IMPORTANT:
+    # The generator now creates TOMORROW'S calendar.
+    # Read the target date from calendar_data.json so the
+    # correct day is highlighted.
+    #
+    # Fallback to today's Kolkata date if target_date is not
+    # present, keeping the renderer backwards-compatible.
+    # --------------------------------------------------------
 
-    today_string = today.isoformat()
+    target_date_string = data.get(
+        "target_date",
+        datetime.now(TIMEZONE).date().isoformat(),
+    )
 
     # --------------------------------------------------------
     # Canvas
@@ -507,30 +516,81 @@ def main():
     # HEADER — FINAL CLEAN BALANCED LAYOUT
     # Three balanced zones: sun/times, centered month + Samvat,
     # and moon/times. The center texts use identical typography.
+    # ========================================================
 
-    hindu_month = hindu_month_label(year, month)
+    hindu_month = hindu_month_label(
+        year,
+        month,
+    )
 
-    samvat_year = year + 57 if month >= 4 else year + 56
-    samvat_text = f"विक्रम संवत {samvat_year}"
+    samvat_year = (
+        year + 57
+        if month >= 4
+        else year + 56
+    )
 
-    header_center_font = load_font(FONT_DEV_BOLD, 22)
+    samvat_text = (
+        f"विक्रम संवत {samvat_year}"
+    )
 
-    hindu_bbox = draw.textbbox((0, 0), hindu_month, font=header_center_font)
-    samvat_bbox = draw.textbbox((0, 0), samvat_text, font=header_center_font)
+    header_center_font = load_font(
+        FONT_DEV_BOLD,
+        22,
+    )
 
-    hindu_width = hindu_bbox[2] - hindu_bbox[0]
-    samvat_width = samvat_bbox[2] - samvat_bbox[0]
+    hindu_bbox = draw.textbbox(
+        (0, 0),
+        hindu_month,
+        font=header_center_font,
+    )
+
+    samvat_bbox = draw.textbbox(
+        (0, 0),
+        samvat_text,
+        font=header_center_font,
+    )
+
+    hindu_width = (
+        hindu_bbox[2]
+        - hindu_bbox[0]
+    )
+
+    samvat_width = (
+        samvat_bbox[2]
+        - samvat_bbox[0]
+    )
+
     center_gap = 24
 
-    combined_center_width = hindu_width + center_gap + samvat_width
-    center_start_x = (WIDTH - combined_center_width) // 2
+    combined_center_width = (
+        hindu_width
+        + center_gap
+        + samvat_width
+    )
+
+    center_start_x = (
+        WIDTH
+        - combined_center_width
+    ) // 2
+
     center_y = 47
 
-    hindu_height = hindu_bbox[3] - hindu_bbox[1]
-    samvat_height = samvat_bbox[3] - samvat_bbox[1]
+    hindu_height = (
+        hindu_bbox[3]
+        - hindu_bbox[1]
+    )
+
+    samvat_height = (
+        samvat_bbox[3]
+        - samvat_bbox[1]
+    )
 
     draw.text(
-        (center_start_x, center_y - hindu_height // 2),
+        (
+            center_start_x,
+            center_y
+            - hindu_height // 2,
+        ),
         hindu_month,
         font=header_center_font,
         fill=0,
@@ -538,8 +598,11 @@ def main():
 
     draw.text(
         (
-            center_start_x + hindu_width + center_gap,
-            center_y - samvat_height // 2,
+            center_start_x
+            + hindu_width
+            + center_gap,
+            center_y
+            - samvat_height // 2,
         ),
         samvat_text,
         font=header_center_font,
@@ -547,10 +610,33 @@ def main():
     )
 
     # Astronomical times in 12-hour AM/PM format.
-    sunrise = format_time_12h(days[0].get("sunrise", ""))
-    sunset = format_time_12h(days[0].get("sunset", ""))
-    moonrise = format_time_12h(days[0].get("moonrise", ""))
-    moonset = format_time_12h(days[0].get("moonset", ""))
+    sunrise = format_time_12h(
+        days[0].get(
+            "sunrise",
+            "",
+        )
+    )
+
+    sunset = format_time_12h(
+        days[0].get(
+            "sunset",
+            "",
+        )
+    )
+
+    moonrise = format_time_12h(
+        days[0].get(
+            "moonrise",
+            "",
+        )
+    )
+
+    moonset = format_time_12h(
+        days[0].get(
+            "moonset",
+            "",
+        )
+    )
 
     # Left: sun and two timings. The icon is vertically centered
     # between the two timing lines.
@@ -558,17 +644,27 @@ def main():
     left_icon_y = 35
     left_time_x = 82
 
-    draw_sun_icon(draw, left_icon_x, left_icon_y)
+    draw_sun_icon(
+        draw,
+        left_icon_x,
+        left_icon_y,
+    )
 
     draw.text(
-        (left_time_x, 35),
+        (
+            left_time_x,
+            35,
+        ),
         sunrise,
         font=time_font,
         fill=0,
     )
 
     draw.text(
-        (left_time_x, 62),
+        (
+            left_time_x,
+            62,
+        ),
         sunset,
         font=time_font,
         fill=0,
@@ -580,22 +676,33 @@ def main():
     right_icon_y = 35
     right_time_x = 700
 
-    draw_moon_icon(draw, right_icon_x, right_icon_y)
+    draw_moon_icon(
+        draw,
+        right_icon_x,
+        right_icon_y,
+    )
 
     draw.text(
-        (right_time_x, 35),
+        (
+            right_time_x,
+            35,
+        ),
         moonrise,
         font=time_font,
         fill=0,
     )
 
     draw.text(
-        (right_time_x, 62),
+        (
+            right_time_x,
+            62,
+        ),
         moonset,
         font=time_font,
         fill=0,
     )
 
+    # ========================================================
     # CALENDAR GEOMETRY
     # ========================================================
 
@@ -677,14 +784,19 @@ def main():
 
     row_count = len(grid)
 
-    cell_h = calendar_height // row_count
+    cell_h = (
+        calendar_height
+        // row_count
+    )
 
     y = (
         grid_y
         + weekday_h
     )
 
-    for row_index, row in enumerate(grid):
+    for row_index, row in enumerate(
+        grid
+    ):
 
         if row_index == row_count - 1:
             row_y2 = calendar_bottom
@@ -695,7 +807,9 @@ def main():
             row_y2 - y
         )
 
-        for column, item in enumerate(row):
+        for column, item in enumerate(
+            row
+        ):
 
             x1 = (
                 grid_x
@@ -727,9 +841,16 @@ def main():
 
             item_date = item["date"]
 
+            # ------------------------------------------------
+            # IMPORTANT:
+            # Highlight the target date generated by the
+            # calendar data, rather than the machine's current
+            # date.
+            # ------------------------------------------------
+
             is_today = (
                 item_date
-                == today_string
+                == target_date_string
             )
 
             # ------------------------------------------------
@@ -915,7 +1036,7 @@ def main():
     print("CALENDAR RENDER COMPLETE")
     print("========================================")
     print(f"Month: {month_hindi} {year}")
-    print(f"Today: {today_string}")
+    print(f"Target date: {target_date_string}")
     print(f"Rows: {row_count}")
     print(f"Cell height: {cell_h}")
     print(f"Output: {OUTPUT_FILE}")
