@@ -55,8 +55,41 @@ jobs:
           print("Bitmap size is correct.")
           PY
 
-      - name: Upload generated bitmap
+      - name: Create preview PNG
+        run: |
+          python - <<'PY'
+          from PIL import Image
+
+          width = 800
+          height = 480
+
+          with open("dashboard.bin", "rb") as f:
+              raw = f.read()
+
+          expected = width * height // 8
+
+          if len(raw) != expected:
+              raise SystemExit(
+                  f"Invalid bitmap size: {len(raw)} bytes"
+              )
+
+          image = Image.frombytes(
+              "1",
+              (width, height),
+              raw
+          )
+
+          image.save(
+              "calendar-preview.png"
+          )
+
+          print("Created calendar-preview.png")
+          PY
+
+      - name: Upload calendar preview
         uses: actions/upload-artifact@v4
         with:
-          name: calendar-dashboard-test
-          path: dashboard.bin
+          name: calendar-dashboard-preview
+          path: |
+            dashboard.bin
+            calendar-preview.png
