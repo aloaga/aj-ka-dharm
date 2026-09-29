@@ -489,7 +489,7 @@ def main():
 
     date_font = load_font(
         FONT_LATIN_BOLD,
-        24,
+        18,
     )
 
     tithi_font = load_font(
