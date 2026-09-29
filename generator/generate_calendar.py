@@ -75,6 +75,40 @@ PAKSHA_HI = {
 
 
 # ============================================================
+# MAJOR FESTIVALS — 2026
+#
+# These are kept separately from generic tithi-based vrats.
+# This prevents every Chaturthi / Ashtami / Ekadashi from
+# being incorrectly labelled as a major named festival.
+#
+# Format:
+#     "YYYY-MM-DD": "Hindi festival name"
+# ============================================================
+
+MAJOR_FESTIVALS_2026 = {
+
+    # September 2026
+    "2026-09-04": "गणेश चतुर्थी",
+    "2026-09-17": "पितृ अमावस्या",
+
+    # October 2026
+    "2026-10-11": "नवरात्रि प्रारम्भ",
+    "2026-10-20": "दशहरा",
+    "2026-10-29": "करवा चौथ",
+
+    # November 2026
+    "2026-11-08": "धनतेरस",
+    "2026-11-09": "नरक चतुर्दशी",
+    "2026-11-10": "दीपावली",
+    "2026-11-11": "गोवर्धन पूजा",
+    "2026-11-12": "भाई दूज",
+
+    # December 2026
+    "2026-12-25": "गीता जयंती",
+}
+
+
+# ============================================================
 # BASIC TITHI-BASED FESTIVALS / VRATS
 # ============================================================
 
@@ -83,55 +117,85 @@ def get_basic_festival(
     paksha_name,
 ):
     """
-    Returns a basic festival/vrat label when it can be
-    determined directly from the tithi and paksha.
+    Returns a basic tithi-based observance.
 
-    More complex festivals will be added later using
-    year-specific rules.
+    Major named festivals are handled separately above.
     """
 
-    # Ekadashi occurs twice in a lunar month.
     if tithi_name == "Ekadashi":
         return "एकादशी व्रत"
 
-    # Purnima
     if tithi_name == "Purnima":
         return "पूर्णिमा व्रत"
 
-    # Amavasya
     if tithi_name == "Amavasya":
         return "अमावस्या"
 
-    # Pradosh is associated with Trayodashi.
     if tithi_name == "Trayodashi":
         return "प्रदोष व्रत"
 
-    # Chaturthi is traditionally observed as a vrat.
     if tithi_name == "Chaturthi":
+
         if paksha_name == "Krishna":
             return "संकष्टी चतुर्थी"
-        else:
-            return "चतुर्थी व्रत"
 
-    # Ashtami
+        return "चतुर्थी व्रत"
+
     if tithi_name == "Ashtami":
         return "अष्टमी व्रत"
 
-    # Chaturdashi
     if tithi_name == "Chaturdashi":
+
         if paksha_name == "Krishna":
             return "मासिक शिवरात्रि"
-        else:
-            return "चतुर्दशी व्रत"
+
+        return "चतुर्दशी व्रत"
 
     return ""
+
+
+# ============================================================
+# FESTIVAL SELECTION
+# ============================================================
+
+def get_festival(
+    day,
+    tithi_name,
+    paksha_name,
+):
+    """
+    Major named festival takes priority.
+
+    Otherwise fall back to the generic tithi-based
+    observance.
+    """
+
+    date_key = day.isoformat()
+
+    if day.year == 2026:
+
+        major = MAJOR_FESTIVALS_2026.get(
+            date_key
+        )
+
+        if major:
+            return major
+
+    return get_basic_festival(
+        tithi_name,
+        paksha_name,
+    )
 
 
 # ============================================================
 # NAVAMSHA API HELPER
 # ============================================================
 
-def api_post(endpoint, payload, api_key):
+def api_post(
+    endpoint,
+    payload,
+    api_key,
+):
 
     url = f"{API_URL}/{endpoint}"
 
@@ -150,6 +214,7 @@ def api_post(endpoint, payload, api_key):
     data = response.json()
 
     if data.get("statusCode") != 200:
+
         raise RuntimeError(
             f"Navamsha API error: "
             f"{json.dumps(data, ensure_ascii=False)}"
@@ -162,7 +227,10 @@ def api_post(endpoint, payload, api_key):
 # SUNRISE / SUNSET
 # ============================================================
 
-def get_sun_times(day, api_key):
+def get_sun_times(
+    day,
+    api_key,
+):
 
     payload = {
         "year": day.year,
@@ -186,7 +254,10 @@ def get_sun_times(day, api_key):
 # MOONRISE / MOONSET
 # ============================================================
 
-def get_moon_times(day, api_key):
+def get_moon_times(
+    day,
+    api_key,
+):
 
     payload = {
         "year": day.year,
@@ -264,7 +335,10 @@ def extract_time(value):
 # BUILD ONE CALENDAR DAY
 # ============================================================
 
-def build_day(day, api_key):
+def build_day(
+    day,
+    api_key,
+):
 
     print(
         f"  Fetching {day.isoformat()}..."
@@ -339,10 +413,11 @@ def build_day(day, api_key):
         )
 
     # --------------------------------------------------------
-    # Festival / vrat
+    # Festival
     # --------------------------------------------------------
 
-    festival = get_basic_festival(
+    festival = get_festival(
+        day,
         tithi_name,
         paksha_name,
     )
@@ -507,29 +582,11 @@ def main():
     )
 
     print(
-        "CALENDAR DATA CREATED"
+        "FESTIVAL DATES"
     )
 
     print(
         "========================================"
-    )
-
-    print(
-        f"Output: {OUTPUT_FILE}"
-    )
-
-    print(
-        f"Days generated: {len(days)}"
-    )
-
-    print()
-
-    # --------------------------------------------------------
-    # Show festival results
-    # --------------------------------------------------------
-
-    print(
-        "Festival / vrat dates:"
     )
 
     for item in days:
