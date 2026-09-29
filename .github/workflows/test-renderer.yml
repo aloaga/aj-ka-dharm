@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   render:
@@ -79,12 +79,22 @@ jobs:
               raw
           )
 
-          image.save(
-              "calendar-preview.png"
-          )
+          image.save("calendar-preview.png")
 
           print("Created calendar-preview.png")
           PY
+
+      - name: Commit calendar dashboard
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add dashboard.bin calendar_data.json
+
+          git diff --cached --quiet || git commit \
+            -m "Update calendar dashboard"
+
+          git push
 
       - name: Upload calendar preview
         uses: actions/upload-artifact@v4
