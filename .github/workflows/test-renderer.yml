@@ -3,7 +3,7 @@ name: Test Calendar Renderer
 on:
   workflow_dispatch:
   schedule:
-    - cron: "30 18 * * *"
+    - cron: "0 18 * * *"
 
 permissions:
   contents: write
