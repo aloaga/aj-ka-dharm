@@ -8,6 +8,7 @@ import requests
 
 # ============================================================
 # AJ KA DHARM — MONTHLY CALENDAR DATA ENGINE
+# LOCATION: KOLKATA
 # ============================================================
 
 API_URL = "https://api.navamsha.in/api/v1/panchang"
@@ -75,52 +76,81 @@ PAKSHA_HI = {
 
 
 # ============================================================
-# MAJOR FESTIVALS — 2026
+# KOLKATA — SEPTEMBER 2026 FESTIVAL DATA
 #
-# These are kept separately from generic tithi-based vrats.
-# This prevents every Chaturthi / Ashtami / Ekadashi from
-# being incorrectly labelled as a major named festival.
+# Verified against the Kolkata September 2026 Panchang.
 #
-# Format:
-#     "YYYY-MM-DD": "Hindi festival name"
+# These are major observances suitable for the small calendar
+# cells. Generic tithi-based vrats are handled separately.
 # ============================================================
 
-MAJOR_FESTIVALS_2026 = {
+FESTIVALS_2026 = {
 
-    # September 2026
-    "2026-09-04": "गणेश चतुर्थी",
-    "2026-09-17": "पितृ अमावस्या",
+    "2026-09-02": "हल षष्ठी",
 
-    # October 2026
-    "2026-10-11": "नवरात्रि प्रारम्भ",
-    "2026-10-20": "दशहरा",
-    "2026-10-29": "करवा चौथ",
+    "2026-09-04": "जन्माष्टमी",
 
-    # November 2026
-    "2026-11-08": "धनतेरस",
-    "2026-11-09": "नरक चतुर्दशी",
-    "2026-11-10": "दीपावली",
-    "2026-11-11": "गोवर्धन पूजा",
-    "2026-11-12": "भाई दूज",
+    "2026-09-05": "दही हांडी",
 
-    # December 2026
-    "2026-12-25": "गीता जयंती",
+    "2026-09-07": "अजा एकादशी",
+
+    "2026-09-08": "भौम प्रदोष",
+
+    "2026-09-10": "पिठोरी अमावस्या",
+
+    "2026-09-11": "भाद्रपद अमावस्या",
+
+    "2026-09-12": "चन्द्र दर्शन",
+
+    "2026-09-13": "वराह जयंती",
+
+    "2026-09-14": "गणेश चतुर्थी",
+
+    "2026-09-15": "ऋषि पंचमी",
+
+    "2026-09-17": "विश्वकर्मा पूजा",
+
+    "2026-09-18": "दूर्वा अष्टमी",
+
+    "2026-09-19": "राधा अष्टमी",
+
+    "2026-09-22": "पार्श्व एकादशी",
+
+    "2026-09-23": "वामन जयंती",
+
+    "2026-09-24": "गुरु प्रदोष",
+
+    "2026-09-25": "अनंत चतुर्दशी",
+
+    "2026-09-26": "भाद्रपद पूर्णिमा",
+
+    "2026-09-27": "पितृपक्ष प्रारम्भ",
+
+    "2026-09-29": "विघ्नराज संकष्टी",
 }
 
 
 # ============================================================
-# BASIC TITHI-BASED FESTIVALS / VRATS
+# GENERIC TITHI-BASED OBSERVANCES
 # ============================================================
 
 def get_basic_festival(
+    day,
     tithi_name,
     paksha_name,
 ):
     """
-    Returns a basic tithi-based observance.
+    Provides a generic observance only when there is no
+    named festival for that date.
 
-    Major named festivals are handled separately above.
+    Named festival data always takes priority.
     """
+
+    date_key = day.isoformat()
+
+    # A named festival already exists.
+    if date_key in FESTIVALS_2026:
+        return FESTIVALS_2026[date_key]
 
     if tithi_name == "Ekadashi":
         return "एकादशी व्रत"
@@ -141,9 +171,6 @@ def get_basic_festival(
 
         return "चतुर्थी व्रत"
 
-    if tithi_name == "Ashtami":
-        return "अष्टमी व्रत"
-
     if tithi_name == "Chaturdashi":
 
         if paksha_name == "Krishna":
@@ -155,40 +182,7 @@ def get_basic_festival(
 
 
 # ============================================================
-# FESTIVAL SELECTION
-# ============================================================
-
-def get_festival(
-    day,
-    tithi_name,
-    paksha_name,
-):
-    """
-    Major named festival takes priority.
-
-    Otherwise fall back to the generic tithi-based
-    observance.
-    """
-
-    date_key = day.isoformat()
-
-    if day.year == 2026:
-
-        major = MAJOR_FESTIVALS_2026.get(
-            date_key
-        )
-
-        if major:
-            return major
-
-    return get_basic_festival(
-        tithi_name,
-        paksha_name,
-    )
-
-
-# ============================================================
-# NAVAMSHA API HELPER
+# NAVAMSHA API
 # ============================================================
 
 def api_post(
@@ -196,7 +190,6 @@ def api_post(
     payload,
     api_key,
 ):
-
     url = f"{API_URL}/{endpoint}"
 
     response = requests.post(
@@ -214,24 +207,25 @@ def api_post(
     data = response.json()
 
     if data.get("statusCode") != 200:
-
         raise RuntimeError(
-            f"Navamsha API error: "
-            f"{json.dumps(data, ensure_ascii=False)}"
+            "Navamsha API error: "
+            + json.dumps(
+                data,
+                ensure_ascii=False,
+            )
         )
 
     return data["output"]
 
 
 # ============================================================
-# SUNRISE / SUNSET
+# SUN TIMES
 # ============================================================
 
 def get_sun_times(
     day,
     api_key,
 ):
-
     payload = {
         "year": day.year,
         "month": day.month,
@@ -251,14 +245,13 @@ def get_sun_times(
 
 
 # ============================================================
-# MOONRISE / MOONSET
+# MOON TIMES
 # ============================================================
 
 def get_moon_times(
     day,
     api_key,
 ):
-
     payload = {
         "year": day.year,
         "month": day.month,
@@ -286,7 +279,6 @@ def get_panchang_at_sunrise(
     sunrise_local,
     api_key,
 ):
-
     sunrise_time = datetime.strptime(
         sunrise_local,
         "%H:%M",
@@ -315,7 +307,7 @@ def get_panchang_at_sunrise(
 
 
 # ============================================================
-# FORMAT TIME
+# TIME FORMATTER
 # ============================================================
 
 def extract_time(value):
@@ -332,14 +324,13 @@ def extract_time(value):
 
 
 # ============================================================
-# BUILD ONE CALENDAR DAY
+# ONE DAY
 # ============================================================
 
 def build_day(
     day,
     api_key,
 ):
-
     print(
         f"  Fetching {day.isoformat()}..."
     )
@@ -393,11 +384,9 @@ def build_day(
     )
 
     moonrise = ""
-
     moonset = ""
 
     if moon.get("rise"):
-
         moonrise = extract_time(
             moon["rise"].get(
                 "local_datetime"
@@ -405,7 +394,6 @@ def build_day(
         )
 
     if moon.get("set"):
-
         moonset = extract_time(
             moon["set"].get(
                 "local_datetime"
@@ -416,7 +404,7 @@ def build_day(
     # Festival
     # --------------------------------------------------------
 
-    festival = get_festival(
+    festival = get_basic_festival(
         day,
         tithi_name,
         paksha_name,
@@ -427,7 +415,6 @@ def build_day(
     # --------------------------------------------------------
 
     return {
-
         "date": day.isoformat(),
 
         "day": day.day,
@@ -473,7 +460,6 @@ def main():
     )
 
     if not api_key:
-
         raise RuntimeError(
             "NAVAMSHA_API_KEY GitHub secret "
             "was not found."
@@ -482,7 +468,6 @@ def main():
     today = datetime.now().date()
 
     year = today.year
-
     month = today.month
 
     days_in_month = calendar.monthrange(
@@ -491,31 +476,24 @@ def main():
     )[1]
 
     print()
-
     print(
         "========================================"
     )
-
     print(
         "AJ KA DHARM — CALENDAR DATA"
     )
-
     print(
         "========================================"
     )
-
     print(
         f"Month: {MONTHS_HI[month]} {year}"
     )
-
     print(
         "Location: Kolkata"
     )
-
     print(
         f"Days: {days_in_month}"
     )
-
     print()
 
     days = []
@@ -538,8 +516,11 @@ def main():
             )
         )
 
-    calendar_data = {
+    # --------------------------------------------------------
+    # Calendar data
+    # --------------------------------------------------------
 
+    calendar_data = {
         "year": year,
 
         "month": month,
@@ -551,16 +532,17 @@ def main():
         "timezone": TIMEZONE_NAME,
 
         "location": {
-
             "city": "Kolkata",
-
             "latitude": LATITUDE,
-
             "longitude": LONGITUDE,
         },
 
         "days": days,
     }
+
+    # --------------------------------------------------------
+    # Save JSON
+    # --------------------------------------------------------
 
     with open(
         OUTPUT_FILE,
@@ -575,16 +557,17 @@ def main():
             indent=2,
         )
 
-    print()
+    # --------------------------------------------------------
+    # Print festival report
+    # --------------------------------------------------------
 
+    print()
     print(
         "========================================"
     )
-
     print(
-        "FESTIVAL DATES"
+        "FESTIVAL / VRAT REPORT"
     )
-
     print(
         "========================================"
     )
@@ -601,12 +584,10 @@ def main():
             )
 
     print()
-
     print(
         "Calendar data generated successfully."
     )
 
 
 if __name__ == "__main__":
-
     main()
