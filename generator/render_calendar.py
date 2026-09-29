@@ -576,9 +576,9 @@ def main():
 
     # Right: moon and two timings. Same icon-to-text spacing
     # as the left block.
-    right_icon_x = 680
+    right_icon_x = 663
     right_icon_y = 35
-    right_time_x = 717
+    right_time_x = 700
 
     draw_moon_icon(draw, right_icon_x, right_icon_y)
 
