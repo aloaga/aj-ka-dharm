@@ -2,6 +2,7 @@ import os
 import json
 import calendar
 from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import requests
 
@@ -80,8 +81,9 @@ PAKSHA_HI = {
 #
 # Verified against the Kolkata September 2026 Panchang.
 #
-# These are major observances suitable for the small calendar
-# cells. Generic tithi-based vrats are handled separately.
+# These are major observances suitable for the small
+# calendar cells. Generic tithi-based vrats are handled
+# separately.
 # ============================================================
 
 FESTIVALS_2026 = {
@@ -465,10 +467,27 @@ def main():
             "was not found."
         )
 
-    today = datetime.now().date()
+    # --------------------------------------------------------
+    # Kolkata current date/time
+    # --------------------------------------------------------
 
-    year = today.year
-    month = today.month
+    kolkata_now = datetime.now(
+        ZoneInfo(TIMEZONE_NAME)
+    )
+
+    today = kolkata_now.date()
+
+    # --------------------------------------------------------
+    # IMPORTANT:
+    # Generate TOMORROW'S calendar.
+    # --------------------------------------------------------
+
+    target_date = today + timedelta(
+        days=1
+    )
+
+    year = target_date.year
+    month = target_date.month
 
     days_in_month = calendar.monthrange(
         year,
@@ -485,15 +504,27 @@ def main():
     print(
         "========================================"
     )
+
+    print(
+        f"Kolkata date: {today.isoformat()}"
+    )
+
+    print(
+        f"Target date: {target_date.isoformat()}"
+    )
+
     print(
         f"Month: {MONTHS_HI[month]} {year}"
     )
+
     print(
         "Location: Kolkata"
     )
+
     print(
         f"Days: {days_in_month}"
     )
+
     print()
 
     days = []
@@ -521,9 +552,12 @@ def main():
     # --------------------------------------------------------
 
     calendar_data = {
+
         "year": year,
 
         "month": month,
+
+        "target_date": target_date.isoformat(),
 
         "month_hindi": MONTHS_HI[
             month
@@ -562,12 +596,15 @@ def main():
     # --------------------------------------------------------
 
     print()
+
     print(
         "========================================"
     )
+
     print(
         "FESTIVAL / VRAT REPORT"
     )
+
     print(
         "========================================"
     )
@@ -584,10 +621,15 @@ def main():
             )
 
     print()
+
     print(
         "Calendar data generated successfully."
     )
 
+
+# ============================================================
+# ENTRY POINT
+# ============================================================
 
 if __name__ == "__main__":
     main()
