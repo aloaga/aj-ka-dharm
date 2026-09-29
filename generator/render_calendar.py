@@ -489,17 +489,17 @@ def main():
 
     date_font = load_font(
         FONT_LATIN_BOLD,
-        20,
+        24,
     )
 
     tithi_font = load_font(
         FONT_DEV_BOLD,
-        13,
+        15,
     )
 
     festival_font = load_font(
         FONT_DEV_BOLD,
-        13,
+        15,
     )
 
     # --------------------------------------------------------
