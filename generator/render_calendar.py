@@ -513,7 +513,7 @@ def main():
     samvat_year = year + 57 if month >= 4 else year + 56
     samvat_text = f"विक्रम संवत {samvat_year}"
 
-    header_center_font = load_font(FONT_DEV_BOLD, 16)
+    header_center_font = load_font(FONT_DEV_BOLD, 22)
 
     hindu_bbox = draw.textbbox((0, 0), hindu_month, font=header_center_font)
     samvat_bbox = draw.textbbox((0, 0), samvat_text, font=header_center_font)
