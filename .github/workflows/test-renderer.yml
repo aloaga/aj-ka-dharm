@@ -35,24 +35,28 @@ jobs:
         run: |
           python generator/render_calendar.py
 
-      - name: Verify bitmap
+      - name: Rename calendar bitmap
+        run: |
+          cp dashboard.bin calendar.bin
+
+      - name: Verify calendar bitmap
         run: |
           python - <<'PY'
           import os
 
-          filename = "dashboard.bin"
+          filename = "calendar.bin"
           expected = 800 * 480 // 8
           actual = os.path.getsize(filename)
 
-          print(f"Bitmap size: {actual} bytes")
-          print(f"Expected:    {expected} bytes")
+          print(f"Calendar bitmap size: {actual} bytes")
+          print(f"Expected:             {expected} bytes")
 
           if actual != expected:
               raise SystemExit(
                   f"ERROR: Expected {expected} bytes, got {actual}"
               )
 
-          print("Bitmap size is correct.")
+          print("Calendar bitmap size is correct.")
           PY
 
       - name: Create preview PNG
@@ -63,7 +67,7 @@ jobs:
           width = 800
           height = 480
 
-          with open("dashboard.bin", "rb") as f:
+          with open("calendar.bin", "rb") as f:
               raw = f.read()
 
           expected = width * height // 8
@@ -73,26 +77,20 @@ jobs:
                   f"Invalid bitmap size: {len(raw)} bytes"
               )
 
-          image = Image.frombytes(
-              "1",
-              (width, height),
-              raw
-          )
-
+          image = Image.frombytes("1", (width, height), raw)
           image.save("calendar-preview.png")
 
           print("Created calendar-preview.png")
           PY
 
-      - name: Commit calendar dashboard
+      - name: Commit calendar files
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add dashboard.bin calendar_data.json
+          git add calendar.bin calendar_data.json
 
-          git diff --cached --quiet || git commit \
-            -m "Update calendar dashboard"
+          git diff --cached --quiet || git commit -m "Update calendar"
 
           git push
 
@@ -101,5 +99,5 @@ jobs:
         with:
           name: calendar-dashboard-preview
           path: |
-            dashboard.bin
+            calendar.bin
             calendar-preview.png
