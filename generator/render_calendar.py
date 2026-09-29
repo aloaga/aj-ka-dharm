@@ -484,7 +484,7 @@ def main():
 
     weekday_font = load_font(
         FONT_DEV_BOLD,
-        18,
+        20,
     )
 
     date_font = load_font(
@@ -499,7 +499,7 @@ def main():
 
     festival_font = load_font(
         FONT_DEV_BOLD,
-        18,
+        16,
     )
 
     # --------------------------------------------------------
