@@ -1,11 +1,14 @@
 import json
 import os
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
 from PIL import Image, ImageDraw, ImageFont
 
 
 # ============================================================
 # AJ KA DHARM
-# 800 x 480 E-PAPER CALENDAR RENDERER
+# PREMIUM 800 x 480 MONOCHROME CALENDAR
 # ============================================================
 
 WIDTH = 800
@@ -14,33 +17,45 @@ HEIGHT = 480
 INPUT_FILE = "calendar_data.json"
 OUTPUT_FILE = "dashboard.bin"
 
+TIMEZONE = ZoneInfo("Asia/Kolkata")
+
 
 # ============================================================
-# FONTS
+# FONT PATHS
 # ============================================================
 
-FONT_DIR = "/usr/share/fonts/truetype/noto"
+DEVANAGARI_DIR = "/usr/share/fonts/truetype/noto"
 
-FONT_REGULAR = os.path.join(
-    FONT_DIR,
+FONT_DEV_REGULAR = os.path.join(
+    DEVANAGARI_DIR,
     "NotoSansDevanagari-Regular.ttf"
 )
 
-FONT_BOLD = os.path.join(
-    FONT_DIR,
+FONT_DEV_BOLD = os.path.join(
+    DEVANAGARI_DIR,
     "NotoSansDevanagari-Bold.ttf"
 )
 
-FONT_LATIN = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
-FONT_LATIN_BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+FONT_LATIN = (
+    "/usr/share/fonts/truetype/dejavu/"
+    "DejaVuSans.ttf"
+)
+
+FONT_LATIN_BOLD = (
+    "/usr/share/fonts/truetype/dejavu/"
+    "DejaVuSans-Bold.ttf"
+)
 
 
-def font(path, size):
-    return ImageFont.truetype(path, size)
+def load_font(path, size):
+    return ImageFont.truetype(
+        path,
+        size
+    )
 
 
 # ============================================================
-# HINDI MONTH / WEEKDAY HELPERS
+# MONTH NAMES
 # ============================================================
 
 MONTHS_EN = {
@@ -60,91 +75,73 @@ MONTHS_EN = {
 
 
 # ============================================================
-# DRAWING HELPERS
+# DRAW TEXT CENTERED
 # ============================================================
 
-def center_text(draw, box, text, fnt, fill=0):
+def center_text(
+    draw,
+    box,
+    text,
+    fnt,
+    fill=0,
+):
     x1, y1, x2, y2 = box
 
     bbox = draw.textbbox(
         (0, 0),
         text,
-        font=fnt
+        font=fnt,
     )
 
     tw = bbox[2] - bbox[0]
     th = bbox[3] - bbox[1]
 
     x = x1 + ((x2 - x1) - tw) // 2
-    y = y1 + ((y2 - y1) - th) // 2 - bbox[1]
+    y = (
+        y1
+        + ((y2 - y1) - th) // 2
+        - bbox[1]
+    )
 
     draw.text(
         (x, y),
         text,
         font=fnt,
-        fill=fill
+        fill=fill,
     )
 
 
-def draw_sun_icon(draw, x, y):
-    draw.ellipse(
-        (x + 5, y + 5, x + 19, y + 19),
-        outline=0,
-        width=2
-    )
-
-    rays = [
-        ((12, 0), (12, 5)),
-        ((12, 19), (12, 24)),
-        ((0, 12), (5, 12)),
-        ((19, 12), (24, 12)),
-        ((3, 3), (7, 7)),
-        ((17, 17), (21, 21)),
-        ((17, 7), (21, 3)),
-        ((3, 21), (7, 17)),
-    ]
-
-    for a, b in rays:
-        draw.line(
-            (
-                x + a[0],
-                y + a[1],
-                x + b[0],
-                y + b[1],
-            ),
-            fill=0,
-            width=2
-        )
-
-
-def draw_moon_icon(draw, x, y):
-    draw.arc(
-        (x, y, x + 24, y + 24),
-        55,
-        305,
-        fill=0,
-        width=2
-    )
-
+# ============================================================
+# ORNAMENTAL BORDER
+# ============================================================
 
 def draw_border(draw):
-    # Outer border
+
+    # Outer frame
     draw.rectangle(
-        (8, 8, WIDTH - 9, HEIGHT - 9),
+        (
+            8,
+            8,
+            WIDTH - 9,
+            HEIGHT - 9,
+        ),
         outline=0,
-        width=2
+        width=2,
     )
 
-    # Inner border
+    # Inner frame
     draw.rectangle(
-        (14, 14, WIDTH - 15, HEIGHT - 15),
+        (
+            14,
+            14,
+            WIDTH - 15,
+            HEIGHT - 15,
+        ),
         outline=0,
-        width=1
+        width=1,
     )
 
-    # Corner ornaments
-    size = 12
-
+    # Corner geometric ornaments
     corners = [
         (20, 20, 1, 1),
         (WIDTH - 20, 20, -1, 1),
@@ -153,15 +150,16 @@ def draw_border(draw):
     ]
 
     for x, y, sx, sy in corners:
+
         draw.line(
             (
                 x,
                 y,
-                x + sx * size,
-                y
+                x + sx * 11,
+                y,
             ),
             fill=0,
-            width=2
+            width=2,
         )
 
         draw.line(
@@ -169,141 +167,291 @@ def draw_border(draw):
                 x,
                 y,
                 x,
-                y + sy * size
+                y + sy * 11,
             ),
             fill=0,
-            width=2
+            width=2,
         )
 
         draw.rectangle(
             (
-                x + sx * 4 - 2,
-                y + sy * 4 - 2,
-                x + sx * 4 + 2,
-                y + sy * 4 + 2,
+                x + sx * 3 - 2,
+                y + sy * 3 - 2,
+                x + sx * 3 + 2,
+                y + sy * 3 + 2,
             ),
-            fill=0
+            fill=0,
         )
+
+
+# ============================================================
+# SUN ICON
+# ============================================================
+
+def draw_sun_icon(
+    draw,
+    x,
+    y,
+):
+    draw.ellipse(
+        (
+            x + 6,
+            y + 6,
+            x + 18,
+            y + 18,
+        ),
+        outline=0,
+        width=2,
+    )
+
+    rays = [
+        (12, 0, 12, 5),
+        (12, 19, 12, 24),
+        (0, 12, 5, 12),
+        (19, 12, 24, 12),
+        (3, 3, 7, 7),
+        (17, 17, 21, 21),
+        (17, 7, 21, 3),
+        (3, 21, 7, 17),
+    ]
+
+    for x1, y1, x2, y2 in rays:
+
+        draw.line(
+            (
+                x + x1,
+                y + y1,
+                x + x2,
+                y + y2,
+            ),
+            fill=0,
+            width=2,
+        )
+
+
+# ============================================================
+# MOON ICON
+# ============================================================
+
+def draw_moon_icon(
+    draw,
+    x,
+    y,
+):
+    draw.arc(
+        (
+            x,
+            y,
+            x + 24,
+            y + 24,
+        ),
+        55,
+        305,
+        fill=0,
+        width=2,
+    )
+
+
+# ============================================================
+# LOTUS / DIAMOND ORNAMENT
+# ============================================================
+
+def draw_diamond(
+    draw,
+    x,
+    y,
+):
+    draw.polygon(
+        [
+            (x, y - 6),
+            (x + 6, y),
+            (x, y + 6),
+            (x - 6, y),
+        ],
+        fill=0,
+    )
+
+
+# ============================================================
+# DYNAMIC HINDU MONTH LABEL
+# ============================================================
+
+def hindu_month_label(
+    year,
+    month,
+):
+    """
+    Month transition label.
+
+    For the current 2026 Kolkata calendar this gives the
+    approved September heading.
+
+    Future month mappings can be expanded without changing
+    the renderer.
+    """
+
+    known = {
+        (2026, 1): "पौष — माघ",
+        (2026, 2): "माघ — फाल्गुन",
+        (2026, 3): "फाल्गुन — चैत्र",
+        (2026, 4): "चैत्र — वैशाख",
+        (2026, 5): "वैशाख — ज्येष्ठ",
+        (2026, 6): "ज्येष्ठ — आषाढ़",
+        (2026, 7): "आषाढ़ — श्रावण",
+        (2026, 8): "श्रावण — भाद्रपद",
+        (2026, 9): "भाद्रपद — आश्विन",
+        (2026, 10): "आश्विन — कार्तिक",
+        (2026, 11): "कार्तिक — मार्गशीर्ष",
+        (2026, 12): "मार्गशीर्ष — पौष",
+    }
+
+    return known.get(
+        (year, month),
+        "",
+    )
 
 
 # ============================================================
 # CALENDAR GRID
 # ============================================================
 
-def build_calendar_grid(days):
-    """
-    Creates a 6 x 7 grid.
-
-    Python weekday:
-        Monday = 0
-        Sunday = 6
-
-    Calendar display:
-        Sunday -> Saturday
-    """
+def build_grid(days):
 
     if not days:
         return []
 
-    first = days[0]
+    first_date = datetime.fromisoformat(
+        days[0]["date"]
+    ).date()
 
-    first_weekday = (
-        __import__("datetime")
-        .date.fromisoformat(
-            first["date"]
-        ).weekday()
-    )
+    # Python:
+    # Monday = 0 ... Sunday = 6
+    #
+    # Display:
+    # Sunday = 0 ... Saturday = 6
 
-    # Convert Monday=0...Sunday=6
-    # to Sunday=0...Saturday=6
-    sunday_index = (first_weekday + 1) % 7
+    sunday_offset = (
+        first_date.weekday() + 1
+    ) % 7
 
-    grid = [None] * sunday_index
+    grid = [None] * sunday_offset
 
     grid.extend(days)
 
     while len(grid) % 7 != 0:
         grid.append(None)
 
+    # Keep the same spacious 6-row calendar
+    # structure as the approved design.
     while len(grid) < 42:
         grid.append(None)
 
     return [
         grid[i:i + 7]
-        for i in range(0, len(grid), 7)
+        for i in range(
+            0,
+            len(grid),
+            7,
+        )
     ]
 
 
 # ============================================================
-# MAIN RENDERER
+# MAIN
 # ============================================================
 
 def main():
 
-    print("Loading calendar data...")
+    print(
+        "Loading calendar data..."
+    )
 
     with open(
         INPUT_FILE,
         "r",
-        encoding="utf-8"
-    ) as f:
-        data = json.load(f)
+        encoding="utf-8",
+    ) as file:
+
+        data = json.load(file)
 
     days = data["days"]
 
-    month = data["month"]
-    month_hindi = data["month_hindi"]
     year = data["year"]
+    month = data["month"]
+
+    month_hindi = data[
+        "month_hindi"
+    ]
 
     # --------------------------------------------------------
-    # Canvas
+    # Current date in Kolkata
+    # --------------------------------------------------------
+
+    today = datetime.now(
+        TIMEZONE
+    ).date()
+
+    today_string = today.isoformat()
+
+    # --------------------------------------------------------
+    # Image
     # --------------------------------------------------------
 
     image = Image.new(
         "1",
-        (WIDTH, HEIGHT),
-        1
+        (
+            WIDTH,
+            HEIGHT,
+        ),
+        1,
     )
 
-    draw = ImageDraw.Draw(image)
+    draw = ImageDraw.Draw(
+        image
+    )
 
     # --------------------------------------------------------
     # Fonts
     # --------------------------------------------------------
 
-    title_font = font(
-        FONT_BOLD,
-        28
+    title_font = load_font(
+        FONT_DEV_BOLD,
+        27,
     )
 
-    subtitle_font = font(
-        FONT_REGULAR,
-        14
+    subtitle_hindi_font = load_font(
+        FONT_DEV_REGULAR,
+        13,
     )
 
-    time_font = font(
+    subtitle_latin_font = load_font(
+        FONT_LATIN,
+        12,
+    )
+
+    time_font = load_font(
         FONT_LATIN_BOLD,
-        13
+        13,
     )
 
-    weekday_font = font(
-        FONT_BOLD,
-        12
+    weekday_font = load_font(
+        FONT_DEV_BOLD,
+        11,
     )
 
-    date_font = font(
+    date_font = load_font(
         FONT_LATIN_BOLD,
-        20
+        19,
     )
 
-    tithi_font = font(
-        FONT_REGULAR,
-        11
+    tithi_font = load_font(
+        FONT_DEV_REGULAR,
+        10,
     )
 
-    festival_font = font(
-        FONT_BOLD,
-        9
+    festival_font = load_font(
+        FONT_DEV_BOLD,
+        8,
     )
 
     # --------------------------------------------------------
@@ -313,25 +461,74 @@ def main():
     draw_border(draw)
 
     # --------------------------------------------------------
-    # Header
+    # Header title
     # --------------------------------------------------------
 
     center_text(
         draw,
-        (220, 25, 580, 61),
+        (
+            220,
+            22,
+            580,
+            57,
+        ),
         f"{month_hindi} {year}",
-        title_font
+        title_font,
+    )
+
+    # --------------------------------------------------------
+    # Header subtitle
+    # --------------------------------------------------------
+
+    hindu_month = hindu_month_label(
+        year,
+        month,
+    )
+
+    subtitle_y = 56
+
+    center_text(
+        draw,
+        (
+            280,
+            subtitle_y,
+            520,
+            subtitle_y + 20,
+        ),
+        MONTHS_EN[month],
+        subtitle_latin_font,
     )
 
     center_text(
         draw,
-        (230, 57, 570, 79),
-        f"{MONTHS_EN[month]}  |  भाद्रपद — आश्विन",
-        subtitle_font
+        (
+            445,
+            subtitle_y,
+            620,
+            subtitle_y + 20,
+        ),
+        f"|  {hindu_month}",
+        subtitle_hindi_font,
     )
 
     # --------------------------------------------------------
-    # Sunrise / Sunset
+    # Header ornaments
+    # --------------------------------------------------------
+
+    draw_diamond(
+        draw,
+        211,
+        49,
+    )
+
+    draw_diamond(
+        draw,
+        589,
+        49,
+    )
+
+    # --------------------------------------------------------
+    # Sunrise
     # --------------------------------------------------------
 
     first_day = days[0]
@@ -339,78 +536,89 @@ def main():
     draw_sun_icon(
         draw,
         34,
-        34
+        34,
     )
 
     draw.text(
-        (64, 38),
+        (
+            64,
+            38,
+        ),
         first_day["sunrise"],
         font=time_font,
-        fill=0
+        fill=0,
     )
+
+    # --------------------------------------------------------
+    # Sunset
+    # --------------------------------------------------------
 
     draw_sun_icon(
         draw,
         34,
-        62
+        63,
     )
 
     draw.text(
-        (64, 66),
+        (
+            64,
+            67,
+        ),
         first_day["sunset"],
         font=time_font,
-        fill=0
+        fill=0,
     )
 
     # --------------------------------------------------------
-    # Moonrise / Moonset
+    # Moonrise
     # --------------------------------------------------------
 
     draw_moon_icon(
         draw,
         690,
-        34
+        34,
     )
 
     draw.text(
-        (720, 38),
+        (
+            720,
+            38,
+        ),
         first_day["moonrise"],
         font=time_font,
-        fill=0
+        fill=0,
     )
+
+    # --------------------------------------------------------
+    # Moonset
+    # --------------------------------------------------------
 
     draw_moon_icon(
         draw,
         690,
-        62
+        63,
     )
 
     draw.text(
-        (720, 66),
+        (
+            720,
+            67,
+        ),
         first_day["moonset"],
         font=time_font,
-        fill=0
-    )
-
-    # Decorative diamonds
-    draw.polygon(
-        [(205, 49), (211, 43), (217, 49), (211, 55)],
-        fill=0
-    )
-
-    draw.polygon(
-        [(583, 49), (589, 43), (595, 49), (589, 55)],
-        fill=0
+        fill=0,
     )
 
     # --------------------------------------------------------
-    # Calendar area
+    # Calendar geometry
     # --------------------------------------------------------
 
     grid_x = 25
     grid_y = 91
+
     grid_w = 750
-    header_h = 28
+
+    weekday_h = 27
 
     cell_w = grid_w // 7
     cell_h = 56
@@ -429,14 +637,29 @@ def main():
     # Weekday headers
     # --------------------------------------------------------
 
-    for col, weekday in enumerate(weekdays):
+    for column, weekday in enumerate(
+        weekdays
+    ):
 
-        x1 = grid_x + col * cell_w
-        x2 = x1 + cell_w - 1
+        x1 = (
+            grid_x
+            + column * cell_w
+        )
+
+        x2 = (
+            x1
+            + cell_w
+            - 1
+        )
 
         draw.rectangle(
-            (x1, grid_y, x2, grid_y + header_h),
-            fill=0
+            (
+                x1,
+                grid_y,
+                x2,
+                grid_y + weekday_h,
+            ),
+            fill=0,
         )
 
         center_text(
@@ -445,52 +668,73 @@ def main():
                 x1,
                 grid_y,
                 x2,
-                grid_y + header_h
+                grid_y + weekday_h,
             ),
             weekday,
             weekday_font,
-            fill=1
+            fill=1,
         )
 
     # --------------------------------------------------------
-    # Grid
+    # Calendar cells
     # --------------------------------------------------------
 
-    calendar_grid = build_calendar_grid(days)
+    grid = build_grid(days)
 
-    today = data.get(
-        "today",
-        ""
+    y = (
+        grid_y
+        + weekday_h
     )
 
-    y = grid_y + header_h
+    for row in grid:
 
-    for row in calendar_grid:
+        for column, item in enumerate(
+            row
+        ):
 
-        for col, item in enumerate(row):
+            x1 = (
+                grid_x
+                + column * cell_w
+            )
 
-            x1 = grid_x + col * cell_w
-            x2 = x1 + cell_w - 1
-            y2 = y + cell_h - 1
+            x2 = (
+                x1
+                + cell_w
+                - 1
+            )
 
-            # Cell outline
+            y2 = (
+                y
+                + cell_h
+                - 1
+            )
+
+            # Cell border
             draw.rectangle(
-                (x1, y, x2, y2),
+                (
+                    x1,
+                    y,
+                    x2,
+                    y2,
+                ),
                 outline=0,
-                width=1
+                width=1,
             )
 
             if item is None:
                 continue
 
-            item_date = item["date"]
+            item_date = item[
+                "date"
+            ]
 
             is_today = (
-                item_date == today
+                item_date
+                == today_string
             )
 
             # ------------------------------------------------
-            # Today highlight
+            # Today's black highlight
             # ------------------------------------------------
 
             if is_today:
@@ -500,9 +744,9 @@ def main():
                         x1 + 1,
                         y + 1,
                         x2 - 1,
-                        y2 - 1
+                        y2 - 1,
                     ),
-                    fill=0
+                    fill=0,
                 )
 
                 text_fill = 1
@@ -512,17 +756,17 @@ def main():
                 text_fill = 0
 
             # ------------------------------------------------
-            # Date
+            # Gregorian date
             # ------------------------------------------------
 
             draw.text(
                 (
                     x1 + 6,
-                    y + 4
+                    y + 3,
                 ),
                 str(item["day"]),
                 font=date_font,
-                fill=text_fill
+                fill=text_fill,
             )
 
             # ------------------------------------------------
@@ -531,17 +775,17 @@ def main():
 
             tithi = item.get(
                 "tithi",
-                ""
+                "",
             )
 
             draw.text(
                 (
                     x1 + 6,
-                    y + 27
+                    y + 26,
                 ),
                 tithi,
                 font=tithi_font,
-                fill=text_fill
+                fill=text_fill,
             )
 
             # ------------------------------------------------
@@ -550,33 +794,40 @@ def main():
 
             festival = item.get(
                 "festival",
-                ""
+                "",
             )
 
             if festival:
 
+                # Keep the text inside the cell.
+                festival = festival[:13]
+
                 draw.text(
                     (
                         x1 + 6,
-                        y + 42
+                        y + 41,
                     ),
-                    festival[:12],
+                    festival,
                     font=festival_font,
-                    fill=text_fill
+                    fill=text_fill,
                 )
 
         y += cell_h
 
     # --------------------------------------------------------
-    # Convert to exact 1-bit raw bitmap
+    # Convert to raw 1-bit bitmap
     # --------------------------------------------------------
 
-    image = image.convert("1")
+    image = image.convert(
+        "1"
+    )
 
     raw = image.tobytes()
 
     expected_size = (
-        WIDTH * HEIGHT // 8
+        WIDTH
+        * HEIGHT
+        // 8
     )
 
     if len(raw) != expected_size:
@@ -589,10 +840,10 @@ def main():
 
     with open(
         OUTPUT_FILE,
-        "wb"
-    ) as f:
+        "wb",
+    ) as file:
 
-        f.write(raw)
+        file.write(raw)
 
     print()
     print(
@@ -605,6 +856,12 @@ def main():
         "========================================"
     )
     print(
+        f"Month: {month_hindi} {year}"
+    )
+    print(
+        f"Today: {today_string}"
+    )
+    print(
         f"Output: {OUTPUT_FILE}"
     )
     print(
@@ -613,6 +870,7 @@ def main():
     print(
         "Expected: 48000 bytes"
     )
+    print()
 
 
 if __name__ == "__main__":
