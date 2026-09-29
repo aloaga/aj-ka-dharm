@@ -48,10 +48,7 @@ FONT_LATIN_BOLD = (
 
 
 def load_font(path, size):
-    return ImageFont.truetype(
-        path,
-        size
-    )
+    return ImageFont.truetype(path, size)
 
 
 # ============================================================
@@ -118,11 +115,6 @@ def fit_text(
     fnt,
     max_width,
 ):
-    """
-    Shortens text only when necessary so that it
-    stays inside a calendar cell.
-    """
-
     if not text:
         return ""
 
@@ -224,38 +216,49 @@ def draw_border(draw):
 
 
 # ============================================================
-# SUN ICON
+# SUNRISE ICON
+# Sun emerging ABOVE the horizon
 # ============================================================
 
-def draw_sun_icon(
+def draw_sunrise_icon(
     draw,
     x,
     y,
 ):
-    draw.ellipse(
+    # Horizon
+    draw.line(
         (
-            x + 6,
-            y + 6,
-            x + 18,
-            y + 18,
+            x,
+            y + 21,
+            x + 26,
+            y + 21,
         ),
-        outline=0,
+        fill=0,
         width=2,
     )
 
+    # Half sun above horizon
+    draw.arc(
+        (
+            x + 6,
+            y + 7,
+            x + 20,
+            y + 21,
+        ),
+        180,
+        360,
+        fill=0,
+        width=2,
+    )
+
+    # Rising rays
     rays = [
-        (12, 0, 12, 5),
-        (12, 19, 12, 24),
-        (0, 12, 5, 12),
-        (19, 12, 24, 12),
-        (3, 3, 7, 7),
-        (17, 17, 21, 21),
-        (17, 7, 21, 3),
-        (3, 21, 7, 17),
+        (13, 1, 13, 5),
+        (5, 6, 8, 9),
+        (21, 6, 18, 9),
     ]
 
     for x1, y1, x2, y2 in rays:
-
         draw.line(
             (
                 x + x1,
@@ -269,23 +272,154 @@ def draw_sun_icon(
 
 
 # ============================================================
-# MOON ICON
+# SUNSET ICON
+# Sun descending BELOW the horizon
 # ============================================================
 
-def draw_moon_icon(
+def draw_sunset_icon(
     draw,
     x,
     y,
 ):
-    draw.arc(
+    # Horizon
+    draw.line(
         (
             x,
-            y,
-            x + 24,
-            y + 24,
+            y + 4,
+            x + 26,
+            y + 4,
+        ),
+        fill=0,
+        width=2,
+    )
+
+    # Half sun below horizon
+    draw.arc(
+        (
+            x + 6,
+            y + 4,
+            x + 20,
+            y + 18,
+        ),
+        0,
+        180,
+        fill=0,
+        width=2,
+    )
+
+    # Descending rays
+    rays = [
+        (13, 20, 13, 24),
+        (5, 17, 8, 14),
+        (21, 17, 18, 14),
+    ]
+
+    for x1, y1, x2, y2 in rays:
+        draw.line(
+            (
+                x + x1,
+                y + y1,
+                x + x2,
+                y + y2,
+            ),
+            fill=0,
+            width=2,
+        )
+
+
+# ============================================================
+# MOONRISE ICON
+# Crescent emerging ABOVE the horizon
+# ============================================================
+
+def draw_moonrise_icon(
+    draw,
+    x,
+    y,
+):
+    # Horizon
+    draw.line(
+        (
+            x,
+            y + 21,
+            x + 26,
+            y + 21,
+        ),
+        fill=0,
+        width=2,
+    )
+
+    # Crescent above horizon
+    draw.arc(
+        (
+            x + 5,
+            y + 2,
+            x + 21,
+            y + 20,
         ),
         55,
         305,
+        fill=0,
+        width=2,
+    )
+
+    # Rising indicator
+    draw.line(
+        (
+            x + 13,
+            y + 24,
+            x + 13,
+            y + 19,
+        ),
+        fill=0,
+        width=2,
+    )
+
+
+# ============================================================
+# MOONSET ICON
+# Crescent descending BELOW the horizon
+# ============================================================
+
+def draw_moonset_icon(
+    draw,
+    x,
+    y,
+):
+    # Horizon
+    draw.line(
+        (
+            x,
+            y + 4,
+            x + 26,
+            y + 4,
+        ),
+        fill=0,
+        width=2,
+    )
+
+    # Crescent below horizon
+    draw.arc(
+        (
+            x + 5,
+            y + 5,
+            x + 21,
+            y + 23,
+        ),
+        55,
+        305,
+        fill=0,
+        width=2,
+    )
+
+    # Descending indicator
+    draw.line(
+        (
+            x + 13,
+            y,
+            x + 13,
+            y + 6,
+        ),
         fill=0,
         width=2,
     )
@@ -354,12 +488,6 @@ def build_grid(days):
         days[0]["date"]
     ).date()
 
-    # Python:
-    # Monday = 0 ... Sunday = 6
-    #
-    # Calendar:
-    # Sunday = 0 ... Saturday = 6
-
     sunday_offset = (
         first_date.weekday() + 1
     ) % 7
@@ -410,10 +538,6 @@ def main():
     month_hindi = data[
         "month_hindi"
     ]
-
-    # --------------------------------------------------------
-    # Current date
-    # --------------------------------------------------------
 
     today = datetime.now(
         TIMEZONE
@@ -467,20 +591,16 @@ def main():
         11,
     )
 
-    # Date is intentionally prominent.
     date_font = load_font(
         FONT_LATIN_BOLD,
         19,
     )
 
-    # Tithi is smaller than the date but larger
-    # than the previous version.
     tithi_font = load_font(
         FONT_DEV_BOLD,
         10,
     )
 
-    # Festival is deliberately larger and bolder.
     festival_font = load_font(
         FONT_DEV_BOLD,
         10,
@@ -493,7 +613,7 @@ def main():
     draw_border(draw)
 
     # --------------------------------------------------------
-    # Header title
+    # Header
     # --------------------------------------------------------
 
     center_text(
@@ -507,10 +627,6 @@ def main():
         f"{month_hindi} {year}",
         title_font,
     )
-
-    # --------------------------------------------------------
-    # Header subtitle
-    # --------------------------------------------------------
 
     hindu_month = hindu_month_label(
         year,
@@ -541,10 +657,6 @@ def main():
         subtitle_hindi_font,
     )
 
-    # --------------------------------------------------------
-    # Header ornaments
-    # --------------------------------------------------------
-
     draw_diamond(
         draw,
         211,
@@ -563,7 +675,7 @@ def main():
 
     first_day = days[0]
 
-    draw_sun_icon(
+    draw_sunrise_icon(
         draw,
         34,
         34,
@@ -583,7 +695,7 @@ def main():
     # Sunset
     # --------------------------------------------------------
 
-    draw_sun_icon(
+    draw_sunset_icon(
         draw,
         34,
         63,
@@ -603,7 +715,7 @@ def main():
     # Moonrise
     # --------------------------------------------------------
 
-    draw_moon_icon(
+    draw_moonrise_icon(
         draw,
         690,
         34,
@@ -623,7 +735,7 @@ def main():
     # Moonset
     # --------------------------------------------------------
 
-    draw_moon_icon(
+    draw_moonset_icon(
         draw,
         690,
         63,
@@ -648,11 +760,7 @@ def main():
     grid_w = 750
 
     weekday_h = 27
-
     cell_w = grid_w // 7
-
-    # Slightly taller cells give the festival line
-    # more breathing room.
     cell_h = 56
 
     weekdays = [
@@ -741,10 +849,6 @@ def main():
                 - 1
             )
 
-            # ------------------------------------------------
-            # Cell outline
-            # ------------------------------------------------
-
             draw.rectangle(
                 (
                     x1,
@@ -768,10 +872,6 @@ def main():
                 == today_string
             )
 
-            # ------------------------------------------------
-            # Today's highlighted cell
-            # ------------------------------------------------
-
             if is_today:
 
                 draw.rectangle(
@@ -790,18 +890,12 @@ def main():
 
                 text_fill = 0
 
-            # =================================================
-            # TOP LINE
-            #
-            # Date on LEFT
-            # Tithi on RIGHT
-            # =================================================
+            # ------------------------------------------------
+            # Date
+            # ------------------------------------------------
 
             date_x = x1 + 6
 
-            tithi_right_margin = 6
-
-            # Date
             draw.text(
                 (
                     date_x,
@@ -812,7 +906,10 @@ def main():
                 fill=text_fill,
             )
 
-            # Tithi
+            # ------------------------------------------------
+            # Tithi — RIGHT OF DATE
+            # ------------------------------------------------
+
             tithi = item.get(
                 "tithi",
                 "",
@@ -834,12 +931,10 @@ def main():
 
             tithi_x = (
                 x2
-                - tithi_right_margin
+                - 6
                 - tithi_width
             )
 
-            # Keep the tithi from colliding
-            # with the date.
             minimum_tithi_x = (
                 date_x + 34
             )
@@ -857,11 +952,9 @@ def main():
                 fill=text_fill,
             )
 
-            # =================================================
-            # FESTIVAL
-            #
-            # Below date/tithi, larger and bolder.
-            # =================================================
+            # ------------------------------------------------
+            # Festival — BELOW
+            # ------------------------------------------------
 
             festival = item.get(
                 "festival",
@@ -870,13 +963,8 @@ def main():
 
             if festival:
 
-                festival_left = (
-                    x1 + 6
-                )
-
-                festival_right = (
-                    x2 - 6
-                )
+                festival_left = x1 + 6
+                festival_right = x2 - 6
 
                 available_width = (
                     festival_right
@@ -904,7 +992,6 @@ def main():
                     - festival_box[0]
                 )
 
-                # Center the festival in the cell.
                 festival_x = (
                     x1
                     + (
