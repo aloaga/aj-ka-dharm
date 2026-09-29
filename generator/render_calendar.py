@@ -75,7 +75,7 @@ MONTHS_EN = {
 
 
 # ============================================================
-# DRAW TEXT CENTERED
+# TEXT HELPERS
 # ============================================================
 
 def center_text(
@@ -97,6 +97,7 @@ def center_text(
     th = bbox[3] - bbox[1]
 
     x = x1 + ((x2 - x1) - tw) // 2
+
     y = (
         y1
         + ((y2 - y1) - th) // 2
@@ -111,13 +112,53 @@ def center_text(
     )
 
 
+def fit_text(
+    draw,
+    text,
+    fnt,
+    max_width,
+):
+    """
+    Shortens text only when necessary so that it
+    stays inside a calendar cell.
+    """
+
+    if not text:
+        return ""
+
+    bbox = draw.textbbox(
+        (0, 0),
+        text,
+        font=fnt,
+    )
+
+    if bbox[2] - bbox[0] <= max_width:
+        return text
+
+    while len(text) > 1:
+
+        text = text[:-1]
+
+        candidate = text + "…"
+
+        bbox = draw.textbbox(
+            (0, 0),
+            candidate,
+            font=fnt,
+        )
+
+        if bbox[2] - bbox[0] <= max_width:
+            return candidate
+
+    return text
+
+
 # ============================================================
 # ORNAMENTAL BORDER
 # ============================================================
 
 def draw_border(draw):
 
-    # Outer frame
     draw.rectangle(
         (
             8,
@@ -129,7 +170,6 @@ def draw_border(draw):
         width=2,
     )
 
-    # Inner frame
     draw.rectangle(
         (
             14,
@@ -141,7 +181,6 @@ def draw_border(draw):
         width=1,
     )
 
-    # Corner geometric ornaments
     corners = [
         (20, 20, 1, 1),
         (WIDTH - 20, 20, -1, 1),
@@ -253,7 +292,7 @@ def draw_moon_icon(
 
 
 # ============================================================
-# LOTUS / DIAMOND ORNAMENT
+# DIAMOND ORNAMENT
 # ============================================================
 
 def draw_diamond(
@@ -273,22 +312,13 @@ def draw_diamond(
 
 
 # ============================================================
-# DYNAMIC HINDU MONTH LABEL
+# HINDU MONTH LABEL
 # ============================================================
 
 def hindu_month_label(
     year,
     month,
 ):
-    """
-    Month transition label.
-
-    For the current 2026 Kolkata calendar this gives the
-    approved September heading.
-
-    Future month mappings can be expanded without changing
-    the renderer.
-    """
 
     known = {
         (2026, 1): "पौष — माघ",
@@ -327,7 +357,7 @@ def build_grid(days):
     # Python:
     # Monday = 0 ... Sunday = 6
     #
-    # Display:
+    # Calendar:
     # Sunday = 0 ... Saturday = 6
 
     sunday_offset = (
@@ -341,8 +371,6 @@ def build_grid(days):
     while len(grid) % 7 != 0:
         grid.append(None)
 
-    # Keep the same spacious 6-row calendar
-    # structure as the approved design.
     while len(grid) < 42:
         grid.append(None)
 
@@ -384,7 +412,7 @@ def main():
     ]
 
     # --------------------------------------------------------
-    # Current date in Kolkata
+    # Current date
     # --------------------------------------------------------
 
     today = datetime.now(
@@ -394,7 +422,7 @@ def main():
     today_string = today.isoformat()
 
     # --------------------------------------------------------
-    # Image
+    # Canvas
     # --------------------------------------------------------
 
     image = Image.new(
@@ -439,19 +467,23 @@ def main():
         11,
     )
 
+    # Date is intentionally prominent.
     date_font = load_font(
         FONT_LATIN_BOLD,
         19,
     )
 
+    # Tithi is smaller than the date but larger
+    # than the previous version.
     tithi_font = load_font(
-        FONT_DEV_REGULAR,
+        FONT_DEV_BOLD,
         10,
     )
 
+    # Festival is deliberately larger and bolder.
     festival_font = load_font(
         FONT_DEV_BOLD,
-        8,
+        9,
     )
 
     # --------------------------------------------------------
@@ -485,15 +517,13 @@ def main():
         month,
     )
 
-    subtitle_y = 56
-
     center_text(
         draw,
         (
             280,
-            subtitle_y,
-            520,
-            subtitle_y + 20,
+            56,
+            445,
+            76,
         ),
         MONTHS_EN[month],
         subtitle_latin_font,
@@ -503,9 +533,9 @@ def main():
         draw,
         (
             445,
-            subtitle_y,
-            620,
-            subtitle_y + 20,
+            56,
+            625,
+            76,
         ),
         f"|  {hindu_month}",
         subtitle_hindi_font,
@@ -609,18 +639,20 @@ def main():
         fill=0,
     )
 
-    # --------------------------------------------------------
-    # Calendar geometry
-    # --------------------------------------------------------
+    # ========================================================
+    # CALENDAR GEOMETRY
+    # ========================================================
 
     grid_x = 25
     grid_y = 91
-
     grid_w = 750
 
     weekday_h = 27
 
     cell_w = grid_w // 7
+
+    # Slightly taller cells give the festival line
+    # more breathing room.
     cell_h = 56
 
     weekdays = [
@@ -633,9 +665,9 @@ def main():
         "शनिवार",
     ]
 
-    # --------------------------------------------------------
-    # Weekday headers
-    # --------------------------------------------------------
+    # ========================================================
+    # WEEKDAY HEADERS
+    # ========================================================
 
     for column, weekday in enumerate(
         weekdays
@@ -675,9 +707,9 @@ def main():
             fill=1,
         )
 
-    # --------------------------------------------------------
-    # Calendar cells
-    # --------------------------------------------------------
+    # ========================================================
+    # CALENDAR CELLS
+    # ========================================================
 
     grid = build_grid(days)
 
@@ -709,7 +741,10 @@ def main():
                 - 1
             )
 
-            # Cell border
+            # ------------------------------------------------
+            # Cell outline
+            # ------------------------------------------------
+
             draw.rectangle(
                 (
                     x1,
@@ -734,7 +769,7 @@ def main():
             )
 
             # ------------------------------------------------
-            # Today's black highlight
+            # Today's highlighted cell
             # ------------------------------------------------
 
             if is_today:
@@ -755,13 +790,21 @@ def main():
 
                 text_fill = 0
 
-            # ------------------------------------------------
-            # Gregorian date
-            # ------------------------------------------------
+            # =================================================
+            # TOP LINE
+            #
+            # Date on LEFT
+            # Tithi on RIGHT
+            # =================================================
 
+            date_x = x1 + 6
+
+            tithi_right_margin = 6
+
+            # Date
             draw.text(
                 (
-                    x1 + 6,
+                    date_x,
                     y + 3,
                 ),
                 str(item["day"]),
@@ -769,28 +812,56 @@ def main():
                 fill=text_fill,
             )
 
-            # ------------------------------------------------
             # Tithi
-            # ------------------------------------------------
-
             tithi = item.get(
                 "tithi",
                 "",
             )
 
+            tithi_box = draw.textbbox(
+                (
+                    0,
+                    0,
+                ),
+                tithi,
+                font=tithi_font,
+            )
+
+            tithi_width = (
+                tithi_box[2]
+                - tithi_box[0]
+            )
+
+            tithi_x = (
+                x2
+                - tithi_right_margin
+                - tithi_width
+            )
+
+            # Keep the tithi from colliding
+            # with the date.
+            minimum_tithi_x = (
+                date_x + 34
+            )
+
+            if tithi_x < minimum_tithi_x:
+                tithi_x = minimum_tithi_x
+
             draw.text(
                 (
-                    x1 + 6,
-                    y + 26,
+                    tithi_x,
+                    y + 7,
                 ),
                 tithi,
                 font=tithi_font,
                 fill=text_fill,
             )
 
-            # ------------------------------------------------
-            # Festival
-            # ------------------------------------------------
+            # =================================================
+            # FESTIVAL
+            #
+            # Below date/tithi, larger and bolder.
+            # =================================================
 
             festival = item.get(
                 "festival",
@@ -799,24 +870,64 @@ def main():
 
             if festival:
 
-                # Keep the text inside the cell.
-                festival = festival[:13]
+                festival_left = (
+                    x1 + 6
+                )
+
+                festival_right = (
+                    x2 - 6
+                )
+
+                available_width = (
+                    festival_right
+                    - festival_left
+                )
+
+                festival_text = fit_text(
+                    draw,
+                    festival,
+                    festival_font,
+                    available_width,
+                )
+
+                festival_box = draw.textbbox(
+                    (
+                        0,
+                        0,
+                    ),
+                    festival_text,
+                    font=festival_font,
+                )
+
+                festival_width = (
+                    festival_box[2]
+                    - festival_box[0]
+                )
+
+                # Center the festival in the cell.
+                festival_x = (
+                    x1
+                    + (
+                        cell_w
+                        - festival_width
+                    ) // 2
+                )
 
                 draw.text(
                     (
-                        x1 + 6,
-                        y + 41,
+                        festival_x,
+                        y + 33,
                     ),
-                    festival,
+                    festival_text,
                     font=festival_font,
                     fill=text_fill,
                 )
 
         y += cell_h
 
-    # --------------------------------------------------------
-    # Convert to raw 1-bit bitmap
-    # --------------------------------------------------------
+    # ========================================================
+    # RAW 1-BIT BITMAP
+    # ========================================================
 
     image = image.convert(
         "1"
