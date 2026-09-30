@@ -497,12 +497,12 @@ def main():
 
     # These remain at the enlarged 14-point size.
     tithi_font = load_font(
-        FONT_DEV_BOLD,
+        FONT_DEV_REGULAR,
         14,
     )
 
     festival_font = load_font(
-        FONT_DEV_BOLD,
+        FONT_DEV_REGULAR,
         14,
     )
 
