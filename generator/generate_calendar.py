@@ -938,6 +938,5 @@ def main():
     # The dashboard always generates TOMORROW's calendar.
     # --------------------------------------------------------
 
-    now = datetime.now(
-        ZoneInfo(
+        now = datetime.now(ZoneInfo(TIMEZONE_NAME))
           
