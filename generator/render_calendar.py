@@ -651,8 +651,8 @@ def main():
 
                 draw.rectangle(
                     (
-                        cell_left + 1,
-                        y + 1,
+                        cell_left + 2,
+                        y + 2,
                         cell_right - 2,
                         row_y2 - 2,
                     ),
