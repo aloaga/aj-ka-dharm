@@ -937,4 +937,9 @@ def build_hindu_month_header(
         )
 
         if name and name not in amanta_names:
-            amanta_names.append(
+            amanta_names.append(name)
+
+if amanta_names:
+    return " — ".join(amanta_names)
+
+return ""
