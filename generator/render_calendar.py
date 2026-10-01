@@ -625,10 +625,10 @@ def main():
 
                 draw.rectangle(
                     (
-                        cell_left + 1,
-                        y + 1,
-                        cell_right - 2,
-                        row_y2 - 2,
+                        cell_left + 4,
+                        y + 4,
+                        cell_right - 4,
+                        row_y2 - 4,
                     ),
                     fill=0,
                 )
