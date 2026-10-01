@@ -896,7 +896,6 @@ def build_hindu_month_header(
 
     return ""
 
-
 # ============================================================
 # MAIN
 # ============================================================
@@ -921,13 +920,11 @@ def main():
     )
 
     if not navamsha_api_key:
-
         raise RuntimeError(
             "NAVAMSHA_API_KEY environment variable is missing."
         )
 
     if not tathaastu_api_key:
-
         raise RuntimeError(
             "TATHAASTU_API_KEY environment variable is missing."
         )
@@ -938,5 +935,261 @@ def main():
     # The dashboard always generates TOMORROW's calendar.
     # --------------------------------------------------------
 
-        now = datetime.now(ZoneInfo(TIMEZONE_NAME))
-          
+    now = datetime.now(
+        ZoneInfo(TIMEZONE_NAME)
+    )
+
+    target_date = (
+        now.date()
+        + timedelta(days=1)
+    )
+
+    year = target_date.year
+    month = target_date.month
+
+    print(
+        f"Current local date : {now.date().isoformat()}"
+    )
+
+    print(
+        f"Target date        : {target_date.isoformat()}"
+    )
+
+    print(
+        f"Calendar month     : "
+        f"{MONTHS_HI[month]} {year}"
+    )
+
+    # --------------------------------------------------------
+    # MONTH RANGE
+    # --------------------------------------------------------
+
+    first_day = date(
+        year,
+        month,
+        1,
+    )
+
+    days_in_month = calendar.monthrange(
+        year,
+        month,
+    )[1]
+
+    last_day = date(
+        year,
+        month,
+        days_in_month,
+    )
+
+    # --------------------------------------------------------
+    # FESTIVALS
+    # --------------------------------------------------------
+
+    festivals_by_date = (
+        get_tathaastu_festivals(
+            year,
+            month,
+            tathaastu_api_key,
+        )
+    )
+
+    # --------------------------------------------------------
+    # BUILD EVERY DAY
+    # --------------------------------------------------------
+
+    days = []
+
+    current_day = first_day
+
+    while current_day <= last_day:
+
+        day_record = build_day(
+            current_day,
+            navamsha_api_key,
+            tathaastu_api_key,
+            festivals_by_date,
+        )
+
+        days.append(
+            day_record
+        )
+
+        current_day += timedelta(
+            days=1
+        )
+
+    if not days:
+        raise RuntimeError(
+            "No calendar days were generated."
+        )
+
+    # --------------------------------------------------------
+    # HEADER DATA
+    # --------------------------------------------------------
+
+    hindu_month_header = (
+        build_hindu_month_header(
+            days
+        )
+    )
+
+    if not hindu_month_header:
+        raise RuntimeError(
+            "Unable to build Hindu month header."
+        )
+
+    # --------------------------------------------------------
+    # VIKRAM SAMVAT
+    #
+    # Use the value belonging to the target date.
+    # --------------------------------------------------------
+
+    target_record = None
+
+    for item in days:
+
+        if item["date"] == target_date.isoformat():
+
+            target_record = item
+            break
+
+    if target_record is None:
+        raise RuntimeError(
+            "Target date was not found in generated calendar."
+        )
+
+    vikram_samvat = target_record[
+        "vikram_samvat"
+    ]
+
+    # --------------------------------------------------------
+    # FINAL OUTPUT
+    # --------------------------------------------------------
+
+    output = {
+
+        "generated_at": now.isoformat(),
+
+        "target_date": (
+            target_date.isoformat()
+        ),
+
+        "year": year,
+
+        "month": month,
+
+        # ----------------------------------------------------
+        # Gregorian month name retained for compatibility.
+        # ----------------------------------------------------
+
+        "month_hindi": MONTHS_HI[
+            month
+        ],
+
+        # ----------------------------------------------------
+        # PERPETUAL HINDU CALENDAR VALUES
+        # ----------------------------------------------------
+
+        "hindu_month": (
+            hindu_month_header
+        ),
+
+        "vikram_samvat": int(
+            vikram_samvat
+        ),
+
+        # ----------------------------------------------------
+        # SOURCE INFORMATION
+        # ----------------------------------------------------
+
+        "hindu_calendar_source": {
+            "provider": "TathaAstu",
+            "region": TATHAASTU_REGION,
+            "language": "hi",
+        },
+
+        "festival_source": {
+            "provider": "TathaAstu",
+            "region": TATHAASTU_REGION,
+            "language": "hi",
+        },
+
+        "astronomical_source": {
+            "provider": "Navamsha",
+            "latitude": LATITUDE,
+            "longitude": LONGITUDE,
+            "timezone": TIMEZONE_NAME,
+        },
+
+        # ----------------------------------------------------
+        # DAILY DATA
+        # ----------------------------------------------------
+
+        "days": days,
+    }
+
+    # --------------------------------------------------------
+    # WRITE JSON
+    # --------------------------------------------------------
+
+    with open(
+        OUTPUT_FILE,
+        "w",
+        encoding="utf-8",
+    ) as file:
+
+        json.dump(
+            output,
+            file,
+            ensure_ascii=False,
+            indent=2,
+        )
+
+    # --------------------------------------------------------
+    # LOG
+    # --------------------------------------------------------
+
+    print()
+    print("========================================")
+    print("CALENDAR DATA GENERATION COMPLETE")
+    print("========================================")
+
+    print(
+        f"Calendar: "
+        f"{MONTHS_HI[month]} {year}"
+    )
+
+    print(
+        f"Target date: "
+        f"{target_date.isoformat()}"
+    )
+
+    print(
+        f"Hindu month: "
+        f"{hindu_month_header}"
+    )
+
+    print(
+        f"Vikram Samvat: "
+        f"{vikram_samvat}"
+    )
+
+    print(
+        f"Days generated: "
+        f"{len(days)}"
+    )
+
+    print(
+        f"Output: "
+        f"{OUTPUT_FILE}"
+    )
+
+    print("========================================")
+
+
+# ============================================================
+# ENTRY POINT
+# ============================================================
+
+if __name__ == "__main__":
+    main()
