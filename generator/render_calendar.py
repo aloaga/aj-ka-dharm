@@ -188,9 +188,15 @@ MOON_EMOJI_PNG_B64 = (
 def draw_moon_icon(draw, x, y):
     icon_data = base64.b64decode(MOON_EMOJI_PNG_B64)
     icon = Image.open(
-        BytesIO(icon_data)
-    ).convert("1")
+    BytesIO(icon_data)
+).convert("1")
 
+# Invert the monochrome emoji so the moon is black
+# on a white background.
+icon = Image.eval(
+    icon,
+    lambda pixel: 1 - pixel
+)
     draw.bitmap(
         (x, y),
         icon,
