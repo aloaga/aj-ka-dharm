@@ -1,0 +1,48 @@
+name: Test TathaAstu Festival API
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-api:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Test TathaAstu
+        env:
+          TATHAASTU_API_KEY: ${{ secrets.TATHAASTU_API_KEY }}
+        run: |
+          python - <<'PY'
+          import os
+          import requests
+          import json
+
+          url = "https://api.tathaastuapi.com/v1/festivals/month"
+
+          params = {
+              "year": 2026,
+              "month": 10,
+              "region": "NORTH_INDIA",
+              "lang": "hi",
+          }
+
+          headers = {
+              "X-API-Key": os.environ["TATHAASTU_API_KEY"]
+          }
+
+          response = requests.get(
+              url,
+              params=params,
+              headers=headers,
+              timeout=30,
+          )
+
+          print("HTTP STATUS:", response.status_code)
+          print()
+
+          response.raise_for_status()
+
+          data = response.json()
+
+          print(json.dumps(data, ensure_ascii=False, indent=2))
+          PY
