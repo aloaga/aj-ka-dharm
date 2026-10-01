@@ -43,6 +43,11 @@ FONT_LATIN_BOLD = (
     "DejaVuSans-Bold.ttf"
 )
 
+FONT_SYMBOLS = (
+    "/usr/share/fonts/truetype/noto/"
+    "NotoSansSymbols2-Regular.ttf"
+)
+
 
 def load_font(path, size):
     return ImageFont.truetype(path, size)
@@ -177,28 +182,36 @@ def draw_sun_icon(draw, x, y):
 # ============================================================
 
 def draw_moon_icon(draw, x, y):
-    cx = x + 13
-    cy = y + 13
+    # Use the actual Unicode moon character 🌙.
+    # Noto Sans Symbols 2 provides a monochrome glyph suitable
+    # for the 1-bit e-paper display.
+    moon_font = load_font(
+        FONT_SYMBOLS,
+        36,
+    )
 
-    draw.ellipse(
+    bbox = draw.textbbox(
+        (0, 0),
+        "🌙",
+        font=moon_font,
+    )
+
+    glyph_width = bbox[2] - bbox[0]
+    glyph_height = bbox[3] - bbox[1]
+
+    target_cx = x + 14
+    target_cy = y + 14
+
+    draw.text(
         (
-            cx - 12,
-            cy - 12,
-            cx + 12,
-            cy + 12,
+            target_cx - glyph_width // 2 - bbox[0],
+            target_cy - glyph_height // 2 - bbox[1],
         ),
+        "🌙",
+        font=moon_font,
         fill=0,
     )
 
-    draw.ellipse(
-        (
-            cx - 4,
-            cy - 12,
-            cx + 15,
-            cy + 12,
-        ),
-        fill=1,
-    )
 
 
 # ============================================================
@@ -434,21 +447,34 @@ def main():
         )
     )
 
+    # Keep both icon centers vertically aligned at the same
+    # header center, and center the two timing lines around them.
+    #
+    # The sun icon starts 45px from the left edge.
+    # The right edge of the moon timings is also 45px from the
+    # right edge of the display (x = 755), giving equal margins.
+    #
+    # The moon icon is the actual Unicode character 🌙 rendered
+    # monochrome with Noto Sans Symbols 2.
+
     draw_sun_icon(
         draw,
         45,
         35,
     )
 
+    time_y_top = 30
+    time_y_bottom = 50
+
     draw.text(
-        (82, 35),
+        (82, time_y_top),
         sunrise,
         font=time_font,
         fill=0,
     )
 
     draw.text(
-        (82, 62),
+        (82, time_y_bottom),
         sunset,
         font=time_font,
         fill=0,
@@ -456,19 +482,47 @@ def main():
 
     draw_moon_icon(
         draw,
-        663,
+        635,
         35,
     )
 
+    moon_time_right = 755
+
+    moonrise_bbox = draw.textbbox(
+        (0, 0),
+        moonrise,
+        font=time_font,
+    )
+
+    moonset_bbox = draw.textbbox(
+        (0, 0),
+        moonset,
+        font=time_font,
+    )
+
+    moonrise_width = (
+        moonrise_bbox[2] - moonrise_bbox[0]
+    )
+
+    moonset_width = (
+        moonset_bbox[2] - moonset_bbox[0]
+    )
+
     draw.text(
-        (700, 35),
+        (
+            moon_time_right - moonrise_width - moonrise_bbox[0],
+            time_y_top,
+        ),
         moonrise,
         font=time_font,
         fill=0,
     )
 
     draw.text(
-        (700, 62),
+        (
+            moon_time_right - moonset_width - moonset_bbox[0],
+            time_y_bottom,
+        ),
         moonset,
         font=time_font,
         fill=0,
