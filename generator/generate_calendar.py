@@ -1235,66 +1235,38 @@ def build_hindu_month_header(
 # MAIN
 # ============================================================
 
-def main():
+def build_calendar_output(
+    calendar_date,
+    highlighted_date,
+    navamsha_api_key,
+    tathaastu_api_key,
+    festivals_by_date,
+    now,
+):
+    """
+    Build one complete monthly calendar.
+
+    calendar_date:
+        Any date inside the Gregorian month that should be
+        displayed.
+
+    highlighted_date:
+        The date whose cell should be highlighted by the
+        renderer.
+    """
+
+    year = calendar_date.year
+    month = calendar_date.month
 
     print()
-    print("========================================")
-    print("AJ KA DHARM — CALENDAR GENERATOR")
-    print("========================================")
-
-    # --------------------------------------------------------
-    # API KEYS
-    # --------------------------------------------------------
-
-    navamsha_api_key = os.environ.get(
-        "NAVAMSHA_API_KEY"
-    )
-
-    tathaastu_api_key = os.environ.get(
-        "TATHAASTU_API_KEY"
-    )
-
-    if not navamsha_api_key:
-
-        raise RuntimeError(
-            "NAVAMSHA_API_KEY environment variable is missing."
-        )
-
-    if not tathaastu_api_key:
-
-        raise RuntimeError(
-            "TATHAASTU_API_KEY environment variable is missing."
-        )
-
-    # --------------------------------------------------------
-    # CURRENT / TARGET DATE
-    #
-    # The dashboard always generates TOMORROW's calendar.
-    # --------------------------------------------------------
-
-    now = datetime.now(
-        ZoneInfo(TIMEZONE_NAME)
-    )
-
-    target_date = (
-        now.date()
-        + timedelta(days=1)
-    )
-
-    year = target_date.year
-    month = target_date.month
-
     print(
-        f"Current local date : {now.date().isoformat()}"
-    )
-
-    print(
-        f"Target date        : {target_date.isoformat()}"
-    )
-
-    print(
-        f"Calendar month     : "
+        f"Building calendar month: "
         f"{MONTHS_HI[month]} {year}"
+    )
+
+    print(
+        f"Highlighted date: "
+        f"{highlighted_date.isoformat()}"
     )
 
     # --------------------------------------------------------
@@ -1320,15 +1292,11 @@ def main():
 
     # --------------------------------------------------------
     # FESTIVALS
+    #
+    # Festival data is supplied for this Gregorian month.
     # --------------------------------------------------------
 
-    festivals_by_date = (
-        get_tathaastu_festivals(
-            year,
-            month,
-            tathaastu_api_key,
-        )
-    )
+    month_festivals = festivals_by_date
 
     # --------------------------------------------------------
     # BUILD EVERY DAY
@@ -1344,7 +1312,7 @@ def main():
             current_day,
             navamsha_api_key,
             tathaastu_api_key,
-            festivals_by_date,
+            month_festivals,
         )
 
         days.append(
@@ -1362,7 +1330,7 @@ def main():
         )
 
     # --------------------------------------------------------
-    # HEADER DATA
+    # HINDU MONTH HEADER
     # --------------------------------------------------------
 
     hindu_month_header = (
@@ -1378,27 +1346,38 @@ def main():
         )
 
     # --------------------------------------------------------
-    # VIKRAM SAMVAT
-    #
-    # Use the value belonging to the target date.
+    # FIND HIGHLIGHTED DATE RECORD
     # --------------------------------------------------------
 
-    target_record = None
+    highlighted_record = None
 
     for item in days:
 
-        if item["date"] == target_date.isoformat():
+        if (
+            item["date"]
+            == highlighted_date.isoformat()
+        ):
 
-            target_record = item
+            highlighted_record = item
+
             break
 
-    if target_record is None:
+    if highlighted_record is None:
 
         raise RuntimeError(
-            "Target date was not found in generated calendar."
+            "Highlighted date "
+            f"{highlighted_date.isoformat()} "
+            "does not belong to calendar month "
+            f"{year}-{month:02d}."
         )
 
-    vikram_samvat = target_record[
+    # --------------------------------------------------------
+    # VIKRAM SAMVAT
+    #
+    # Use the value belonging to the highlighted date.
+    # --------------------------------------------------------
+
+    vikram_samvat = highlighted_record[
         "vikram_samvat"
     ]
 
@@ -1410,8 +1389,15 @@ def main():
 
         "generated_at": now.isoformat(),
 
+        # ----------------------------------------------------
+        # IMPORTANT:
+        #
+        # The renderer uses this field to decide which date
+        # receives the black highlight.
+        # ----------------------------------------------------
+
         "target_date": (
-            target_date.isoformat()
+            highlighted_date.isoformat()
         ),
 
         "year": year,
@@ -1468,8 +1454,189 @@ def main():
         "days": days,
     }
 
+    return output
+
+
+def main():
+
+    print()
+    print("========================================")
+    print("AJ KA DHARM — CALENDAR GENERATOR")
+    print("========================================")
+
     # --------------------------------------------------------
-    # WRITE JSON
+    # API KEYS
+    # --------------------------------------------------------
+
+    navamsha_api_key = os.environ.get(
+        "NAVAMSHA_API_KEY"
+    )
+
+    tathaastu_api_key = os.environ.get(
+        "TATHAASTU_API_KEY"
+    )
+
+    if not navamsha_api_key:
+
+        raise RuntimeError(
+            "NAVAMSHA_API_KEY environment variable is missing."
+        )
+
+    if not tathaastu_api_key:
+
+        raise RuntimeError(
+            "TATHAASTU_API_KEY environment variable is missing."
+        )
+
+    # --------------------------------------------------------
+    # CURRENT / TARGET DATES
+    #
+    # We now generate BOTH:
+    #
+    #   1. today's calendar
+    #   2. tomorrow's calendar
+    #
+    # This fixes the reset/highlight problem while preserving
+    # the existing tomorrow-at-23:30 GitHub generation model.
+    # --------------------------------------------------------
+
+    now = datetime.now(
+        ZoneInfo(TIMEZONE_NAME)
+    )
+
+    today = now.date()
+
+    tomorrow = (
+        today
+        + timedelta(days=1)
+    )
+
+    print(
+        f"Current local date : "
+        f"{today.isoformat()}"
+    )
+
+    print(
+        f"Today highlight    : "
+        f"{today.isoformat()}"
+    )
+
+    print(
+        f"Tomorrow highlight : "
+        f"{tomorrow.isoformat()}"
+    )
+
+    # --------------------------------------------------------
+    # DETERMINE WHICH GREGORIAN MONTHS ARE REQUIRED
+    # --------------------------------------------------------
+
+    required_months = {}
+
+    required_months[
+        (
+            today.year,
+            today.month,
+        )
+    ] = True
+
+    required_months[
+        (
+            tomorrow.year,
+            tomorrow.month,
+        )
+    ] = True
+
+    # --------------------------------------------------------
+    # FETCH FESTIVALS ONCE PER REQUIRED MONTH
+    # --------------------------------------------------------
+
+    festivals_by_month = {}
+
+    for (
+        month_year,
+        _
+    ) in required_months.items():
+
+        month_year_year = month_year[0]
+        month_year_month = month_year[1]
+
+        festivals_by_month[
+            month_year
+        ] = get_tathaastu_festivals(
+            month_year_year,
+            month_year_month,
+            tathaastu_api_key,
+        )
+
+    # --------------------------------------------------------
+    # BUILD TODAY'S CALENDAR
+    # --------------------------------------------------------
+
+    today_month_key = (
+        today.year,
+        today.month,
+    )
+
+    today_output = build_calendar_output(
+        calendar_date=today,
+        highlighted_date=today,
+        navamsha_api_key=navamsha_api_key,
+        tathaastu_api_key=tathaastu_api_key,
+        festivals_by_date=festivals_by_month[
+            today_month_key
+        ],
+        now=now,
+    )
+
+    # --------------------------------------------------------
+    # BUILD TOMORROW'S CALENDAR
+    #
+    # If tomorrow is in a new Gregorian month, the correct
+    # next month's calendar is generated automatically.
+    # --------------------------------------------------------
+
+    tomorrow_month_key = (
+        tomorrow.year,
+        tomorrow.month,
+    )
+
+    tomorrow_output = build_calendar_output(
+        calendar_date=tomorrow,
+        highlighted_date=tomorrow,
+        navamsha_api_key=navamsha_api_key,
+        tathaastu_api_key=tathaastu_api_key,
+        festivals_by_date=festivals_by_month[
+            tomorrow_month_key
+        ],
+        now=now,
+    )
+
+    # --------------------------------------------------------
+    # WRITE TODAY'S DATA
+    # --------------------------------------------------------
+
+    today_output_file = (
+        "calendar_data_today.json"
+    )
+
+    with open(
+        today_output_file,
+        "w",
+        encoding="utf-8",
+    ) as file:
+
+        json.dump(
+            today_output,
+            file,
+            ensure_ascii=False,
+            indent=2,
+        )
+
+    # --------------------------------------------------------
+    # WRITE TOMORROW'S DATA
+    #
+    # This remains calendar_data.json so the existing
+    # renderer/workflow continues to recognize it.
     # --------------------------------------------------------
 
     with open(
@@ -1479,7 +1646,7 @@ def main():
     ) as file:
 
         json.dump(
-            output,
+            tomorrow_output,
             file,
             ensure_ascii=False,
             indent=2,
@@ -1495,32 +1662,64 @@ def main():
     print("========================================")
 
     print(
-        f"Calendar: "
-        f"{MONTHS_HI[month]} {year}"
+        "Today's calendar:"
     )
 
     print(
-        f"Target date: "
-        f"{target_date.isoformat()}"
+        f"  Month: "
+        f"{MONTHS_HI[today.month]} "
+        f"{today.year}"
     )
 
     print(
-        f"Hindu month: "
-        f"{hindu_month_header}"
+        f"  Highlight: "
+        f"{today.isoformat()}"
     )
 
     print(
-        f"Vikram Samvat: "
-        f"{vikram_samvat}"
+        f"  Hindu month: "
+        f"{today_output['hindu_month']}"
     )
 
     print(
-        f"Days generated: "
-        f"{len(days)}"
+        f"  Vikram Samvat: "
+        f"{today_output['vikram_samvat']}"
     )
 
     print(
-        f"Output: "
+        f"  Output: "
+        f"{today_output_file}"
+    )
+
+    print()
+
+    print(
+        "Tomorrow's calendar:"
+    )
+
+    print(
+        f"  Month: "
+        f"{MONTHS_HI[tomorrow.month]} "
+        f"{tomorrow.year}"
+    )
+
+    print(
+        f"  Highlight: "
+        f"{tomorrow.isoformat()}"
+    )
+
+    print(
+        f"  Hindu month: "
+        f"{tomorrow_output['hindu_month']}"
+    )
+
+    print(
+        f"  Vikram Samvat: "
+        f"{tomorrow_output['vikram_samvat']}"
+    )
+
+    print(
+        f"  Output: "
         f"{OUTPUT_FILE}"
     )
 
