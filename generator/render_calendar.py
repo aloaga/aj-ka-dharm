@@ -1049,8 +1049,8 @@ def main():
 
     if len(raw) != expected_size:
 
-        raise RuntimeError(
+                raise RuntimeError(
             "Invalid bitmap size: "
             f"{len(raw)} bytes; "
-            f"expected "
-            f"{expected_s
+            f"expected {expected_size} bytes."
+                )
