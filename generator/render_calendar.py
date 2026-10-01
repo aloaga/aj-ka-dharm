@@ -496,19 +496,12 @@ def main():
     # ========================================================
     # EDGE-TO-EDGE CALENDAR GEOMETRY
     #
-    # IMPORTANT:
+    # Full 800px width.
     #
-    # The calendar now uses the COMPLETE 800px width.
+    # NO left outer vertical line.
+    # NO right outer vertical line.
     #
-    # There is:
-    #   - NO left outer vertical line
-    #   - NO right outer vertical line
-    #
-    # The seven columns are distributed across all 800px.
-    # The six internal separators are 1px.
-    #
-    # The weekday black header also runs completely
-    # edge-to-edge.
+    # Only six internal vertical separators.
     # ========================================================
 
     grid_x = 0
@@ -525,16 +518,7 @@ def main():
         - weekday_h
     )
 
-    # --------------------------------------------------------
-    # Seven column boundaries across the full 800px width.
-    #
-    # Using integer rounding distributes the extra pixels
-    # evenly instead of accumulating them at the right.
-    #
-    # Example:
-    # 0, 114, 229, 343, 457, 571, 686, 800
-    # --------------------------------------------------------
-
+    # Seven columns distributed across exactly 800 pixels.
     column_edges = [
         round(
             i * WIDTH / 7
@@ -553,7 +537,7 @@ def main():
     ]
 
     # ========================================================
-    # EDGE-TO-EDGE WEEKDAY HEADER
+    # EDGE-TO-EDGE BLACK WEEKDAY HEADER
     # ========================================================
 
     for column, weekday in enumerate(
@@ -587,7 +571,7 @@ def main():
         )
 
     # ========================================================
-    # CALENDAR GRID
+    # BUILD CALENDAR
     # ========================================================
 
     grid = build_grid(days)
@@ -605,40 +589,16 @@ def main():
     )
 
     # ========================================================
-    # HORIZONTAL GRID LINES
-    #
-    # Draw each horizontal separator ONCE across the entire
-    # 800px width.
-    # ========================================================
-
-    for row_index in range(
-        row_count + 1
-    ):
-
-        if row_index == row_count:
-            y_line = calendar_bottom - 1
-        else:
-            y_line = (
-                body_top
-                + row_index * cell_h
-            )
-
-        draw.line(
-            (
-                0,
-                y_line,
-                WIDTH - 1,
-                y_line,
-            ),
-            fill=0,
-            width=1,
-        )
-
-    # ========================================================
     # CALENDAR CELLS
+    #
+    # IMPORTANT:
+    #
+    # We draw the cell contents FIRST.
+    #
+    # Grid lines are intentionally NOT drawn yet.
+    # This is what allows the final grid lines to remain
+    # visible over today's black highlight.
     # ========================================================
-
-    y = body_top
 
     for row_index, row in enumerate(
         grid
@@ -653,6 +613,11 @@ def main():
                 * cell_h
             )
 
+        y = (
+            body_top
+            + row_index * cell_h
+        )
+
         actual_cell_h = (
             row_y2
             - y
@@ -662,11 +627,8 @@ def main():
             row
         ):
 
-            x1 = column_edges[column]
-            x2 = column_edges[column + 1]
-
-            cell_left = x1
-            cell_right = x2
+            cell_left = column_edges[column]
+            cell_right = column_edges[column + 1]
 
             if item is None:
                 continue
@@ -679,7 +641,10 @@ def main():
             )
 
             # =================================================
-            # TARGET DAY
+            # TARGET DAY BLACK HIGHLIGHT
+            #
+            # Leave a 1px white gap around the highlight.
+            # The actual grid lines will be drawn afterward.
             # =================================================
 
             if is_target:
@@ -835,17 +800,56 @@ def main():
                     fill=text_fill,
                 )
 
-        y = row_y2
+    # ========================================================
+    # FINAL HORIZONTAL GRID LINES
+    #
+    # These are drawn AFTER all cell contents and AFTER the
+    # black target-day highlight.
+    #
+    # Therefore the highlight can NEVER cover these lines.
+    #
+    # Every horizontal line is exactly 1px.
+    # ========================================================
+
+    for row_index in range(
+        row_count + 1
+    ):
+
+        if row_index == row_count:
+
+            y_line = (
+                calendar_bottom
+                - 1
+            )
+
+        else:
+
+            y_line = (
+                body_top
+                + row_index * cell_h
+            )
+
+        draw.line(
+            (
+                0,
+                y_line,
+                WIDTH - 1,
+                y_line,
+            ),
+            fill=0,
+            width=1,
+        )
 
     # ========================================================
-    # INTERNAL VERTICAL GRID LINES
+    # FINAL INTERNAL VERTICAL GRID LINES
     #
-    # ONLY the six internal separators are drawn.
+    # Draw ONLY the six internal separators.
     #
-    # There is deliberately NO line at x=0.
-    # There is deliberately NO line at x=799.
+    # NO line at x=0.
+    # NO line at x=799.
     #
-    # Each separator is exactly 1px.
+    # These are drawn AFTER the black target-day highlight.
+    # Therefore they always remain clearly visible.
     # ========================================================
 
     for column in range(1, 7):
