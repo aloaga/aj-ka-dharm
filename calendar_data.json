@@ -9,6 +9,11 @@
     "latitude": 22.5726,
     "longitude": 88.3639
   },
+  "festival_source": {
+    "provider": "TathaAstu",
+    "region": "NORTH_INDIA",
+    "language": "hi"
+  },
   "days": [
     {
       "date": "2026-10-01",
@@ -50,7 +55,7 @@
       "sunset": "17:22",
       "moonrise": "22:56",
       "moonset": "12:06",
-      "festival": ""
+      "festival": "जितिया"
     },
     {
       "date": "2026-10-04",
@@ -92,7 +97,7 @@
       "sunset": "17:19",
       "moonrise": "01:06",
       "moonset": "14:32",
-      "festival": "एकादशी व्रत"
+      "festival": "इंदिरा एकादशी"
     },
     {
       "date": "2026-10-07",
@@ -120,7 +125,7 @@
       "sunset": "17:17",
       "moonrise": "03:06",
       "moonset": "15:45",
-      "festival": "प्रदोष व्रत"
+      "festival": "मासिक शिवरात्रि"
     },
     {
       "date": "2026-10-09",
@@ -148,7 +153,7 @@
       "sunset": "17:15",
       "moonrise": "04:59",
       "moonset": "16:53",
-      "festival": "अमावस्या"
+      "festival": "महालया अमावस्या"
     },
     {
       "date": "2026-10-11",
@@ -162,7 +167,7 @@
       "sunset": "17:14",
       "moonrise": "05:54",
       "moonset": "17:28",
-      "festival": ""
+      "festival": "शरद नवरात्रि"
     },
     {
       "date": "2026-10-12",
@@ -204,7 +209,7 @@
       "sunset": "17:12",
       "moonrise": "08:43",
       "moonset": "19:31",
-      "festival": "चतुर्थी व्रत"
+      "festival": "विनायक चतुर्थी"
     },
     {
       "date": "2026-10-15",
@@ -232,7 +237,7 @@
       "sunset": "17:10",
       "moonrise": "10:31",
       "moonset": "21:11",
-      "festival": ""
+      "festival": "सरस्वती आवाहन"
     },
     {
       "date": "2026-10-17",
@@ -246,7 +251,7 @@
       "sunset": "17:09",
       "moonrise": "11:20",
       "moonset": "22:04",
-      "festival": ""
+      "festival": "सरस्वती पूजा"
     },
     {
       "date": "2026-10-18",
@@ -274,7 +279,7 @@
       "sunset": "17:08",
       "moonrise": "12:46",
       "moonset": "23:53",
-      "festival": ""
+      "festival": "महा अष्टमी"
     },
     {
       "date": "2026-10-20",
@@ -288,7 +293,7 @@
       "sunset": "17:07",
       "moonrise": "13:23",
       "moonset": "00:47",
-      "festival": ""
+      "festival": "विजयदशमी"
     },
     {
       "date": "2026-10-21",
@@ -316,7 +321,7 @@
       "sunset": "17:05",
       "moonrise": "14:32",
       "moonset": "01:41",
-      "festival": "एकादशी व्रत"
+      "festival": "पापांकुशा एकादशी"
     },
     {
       "date": "2026-10-23",
@@ -330,7 +335,7 @@
       "sunset": "17:05",
       "moonrise": "15:05",
       "moonset": "02:35",
-      "festival": ""
+      "festival": "प्रदोष"
     },
     {
       "date": "2026-10-24",
@@ -358,7 +363,7 @@
       "sunset": "17:03",
       "moonrise": "16:17",
       "moonset": "04:29",
-      "festival": "चतुर्दशी व्रत"
+      "festival": "शरद पूर्णिमा"
     },
     {
       "date": "2026-10-26",
@@ -372,7 +377,7 @@
       "sunset": "17:02",
       "moonrise": "16:58",
       "moonset": "05:31",
-      "festival": "पूर्णिमा व्रत"
+      "festival": "आश्विन पूर्णिमा"
     },
     {
       "date": "2026-10-27",
@@ -414,7 +419,7 @@
       "sunset": "17:00",
       "moonrise": "19:42",
       "moonset": "08:53",
-      "festival": "संकष्टी चतुर्थी"
+      "festival": "करवा चौथ"
     },
     {
       "date": "2026-10-30",
