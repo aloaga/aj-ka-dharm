@@ -34,56 +34,80 @@ jobs:
         run: |
           python generator/generate_calendar.py
 
-      - name: Render calendar
+      - name: Render today's calendar
+        env:
+          CALENDAR_INPUT_FILE: calendar_data_today.json
+          CALENDAR_OUTPUT_FILE: dashboard_today.bin
         run: |
           python generator/render_calendar.py
 
-      - name: Rename calendar bitmap
+      - name: Render tomorrow's calendar
+        env:
+          CALENDAR_INPUT_FILE: calendar_data.json
+          CALENDAR_OUTPUT_FILE: dashboard_tomorrow.bin
         run: |
-          cp dashboard.bin calendar.bin
+          python generator/render_calendar.py
 
-      - name: Verify calendar bitmap
+      - name: Rename calendar bitmaps
+        run: |
+          cp dashboard_today.bin calendar_today.bin
+          cp dashboard_tomorrow.bin calendar.bin
+
+      - name: Verify calendar bitmaps
         run: |
           python - <<'PY'
           import os
 
-          filename = "calendar.bin"
           expected = 800 * 480 // 8
-          actual = os.path.getsize(filename)
 
-          print(f"Calendar bitmap size: {actual} bytes")
-          print(f"Expected:             {expected} bytes")
+          files = [
+              "calendar_today.bin",
+              "calendar.bin",
+          ]
 
-          if actual != expected:
-              raise SystemExit(
-                  f"ERROR: Expected {expected} bytes, got {actual}"
-              )
+          for filename in files:
+              actual = os.path.getsize(filename)
 
-          print("Calendar bitmap size is correct.")
+              print(f"{filename}: {actual} bytes")
+              print(f"Expected: {expected} bytes")
+
+              if actual != expected:
+                  raise SystemExit(
+                      f"ERROR: {filename} has {actual} bytes; "
+                      f"expected {expected}"
+                  )
+
+          print("Both calendar bitmaps have the correct size.")
           PY
 
-      - name: Create preview PNG
+      - name: Create preview PNGs
         run: |
           python - <<'PY'
           from PIL import Image
 
           width = 800
           height = 480
-
-          with open("calendar.bin", "rb") as f:
-              raw = f.read()
-
           expected = width * height // 8
 
-          if len(raw) != expected:
-              raise SystemExit(
-                  f"Invalid bitmap size: {len(raw)} bytes"
-              )
+          previews = [
+              ("calendar_today.bin", "calendar-today-preview.png"),
+              ("calendar.bin", "calendar-preview.png"),
+          ]
 
-          image = Image.frombytes("1", (width, height), raw)
-          image.save("calendar-preview.png")
+          for input_file, output_file in previews:
+              with open(input_file, "rb") as f:
+                  raw = f.read()
 
-          print("Created calendar-preview.png")
+              if len(raw) != expected:
+                  raise SystemExit(
+                      f"Invalid bitmap size for {input_file}: "
+                      f"{len(raw)} bytes"
+                  )
+
+              image = Image.frombytes("1", (width, height), raw)
+              image.save(output_file)
+
+              print(f"Created {output_file}")
           PY
 
       - name: Commit calendar files
@@ -91,16 +115,22 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add calendar.bin calendar_data.json
+          git add \
+            calendar.bin \
+            calendar_today.bin \
+            calendar_data.json \
+            calendar_data_today.json
 
           git diff --cached --quiet || git commit -m "Update calendar"
 
           git push
 
-      - name: Upload calendar preview
+      - name: Upload calendar previews
         uses: actions/upload-artifact@v4
         with:
           name: calendar-dashboard-preview
           path: |
+            calendar_today.bin
             calendar.bin
+            calendar-today-preview.png
             calendar-preview.png
