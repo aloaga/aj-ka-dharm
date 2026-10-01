@@ -30,6 +30,7 @@ jobs:
       - name: Generate calendar data
         env:
           NAVAMSHA_API_KEY: ${{ secrets.NAVAMSHA_API_KEY }}
+          TATHAASTU_API_KEY: ${{ secrets.TATHAASTU_API_KEY }}
         run: |
           python generator/generate_calendar.py
 
