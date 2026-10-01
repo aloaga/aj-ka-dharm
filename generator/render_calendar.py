@@ -195,32 +195,6 @@ def draw_moon_icon(draw, x, y):
 
 
 # ============================================================
-# HINDU MONTH
-# ============================================================
-
-def hindu_month_label(year, month):
-    known = {
-        (2026, 1): "पौष — माघ",
-        (2026, 2): "माघ — फाल्गुन",
-        (2026, 3): "फाल्गुन — चैत्र",
-        (2026, 4): "चैत्र — वैशाख",
-        (2026, 5): "वैशाख — ज्येष्ठ",
-        (2026, 6): "ज्येष्ठ — आषाढ़",
-        (2026, 7): "आषाढ़ — श्रावण",
-        (2026, 8): "श्रावण — भाद्रपद",
-        (2026, 9): "भाद्रपद — आश्विन",
-        (2026, 10): "आश्विन — कार्तिक",
-        (2026, 11): "कार्तिक — मार्गशीर्ष",
-        (2026, 12): "मार्गशीर्ष — पौष",
-    }
-
-    return known.get(
-        (year, month),
-        "",
-    )
-
-
-# ============================================================
 # BUILD SUNDAY-FIRST GRID
 # ============================================================
 
@@ -273,7 +247,18 @@ def main():
     year = data["year"]
     month = data["month"]
 
-    month_hindi = data["month_hindi"]
+    # ========================================================
+    # PERPETUAL HINDU CALENDAR DATA
+    #
+    # These values now come from the calendar generator/API
+    # instead of a hard-coded year/month table or calculation.
+    # ========================================================
+
+    hindu_month = data["hindu_month"]
+
+    samvat_year = data["vikram_samvat"]
+
+    month_hindi = hindu_month
 
     target_date = data.get(
         "target_date",
@@ -334,17 +319,6 @@ def main():
     # ========================================================
     # HEADER
     # ========================================================
-
-    hindu_month = hindu_month_label(
-        year,
-        month,
-    )
-
-    samvat_year = (
-        year + 57
-        if month >= 4
-        else year + 56
-    )
 
     samvat_text = (
         f"विक्रम संवत {samvat_year}"
@@ -651,8 +625,8 @@ def main():
 
                 draw.rectangle(
                     (
-                        cell_left + 2,
-                        y + 2,
+                        cell_left + 1,
+                        y + 1,
                         cell_right - 2,
                         row_y2 - 2,
                     ),
