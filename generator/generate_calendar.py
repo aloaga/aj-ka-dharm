@@ -919,27 +919,4 @@ def build_hindu_month_header(
     if names:
         return " — ".join(names)
 
-    # --------------------------------------------------------
-    # Very defensive fallback.
-    #
-    # This should never normally be needed because the
-    # TathaAstu Panchang request is required to provide the
-    # Hindu calendar section.
-    # --------------------------------------------------------
-
-    amanta_names = []
-
-    for item in days:
-
-        name = item.get(
-            "hindu_month_amanta",
-            "",
-        )
-
-        if name and name not in amanta_names:
-            amanta_names.append(name)
-
-if amanta_names:
-    return " — ".join(amanta_names)
-
-return ""
+    
