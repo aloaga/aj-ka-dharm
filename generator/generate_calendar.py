@@ -17,9 +17,8 @@ import requests
 # Festival style   : North Indian / Hindi
 # Location         : Kolkata
 #
-# IMPORTANT:
-# Tithi, Paksha, Hindu lunar month and Vikram Samvat are
-# dynamically obtained from TathaAstu.
+# Tithi, Paksha, Hindu lunar month and Vikram Samvat
+# are dynamically obtained from TathaAstu.
 #
 # There are NO annual Hindu-month or Tithi lookup tables.
 # ============================================================
@@ -125,9 +124,8 @@ def get_basic_festival(
     Fallback observance used only when TathaAstu does not
     provide a named festival for that date.
 
-    This is NOT a calendar calculation table.
-    It is only a generic visual fallback for recurring
-    tithi observances.
+    This is NOT an annual calendar table.
+    It is only a generic recurring tithi fallback.
     """
 
     if tithi_name == "Ekadashi":
@@ -300,8 +298,7 @@ def choose_festival_for_date(
       2. higher priority
       3. higher confidence
 
-    This keeps the visual design clean without losing
-    the festival calculation behind the scenes.
+    This keeps the visual design clean.
     """
 
     date_key = day.isoformat()
@@ -346,19 +343,15 @@ def get_tathaastu_panchang(
     api_key,
 ):
     """
-    Get the perpetual Panchang data from TathaAstu.
+    Get perpetual Panchang data from TathaAstu.
 
-    This is now the authoritative source for:
+    Authoritative values:
 
       - Tithi
       - Paksha
       - Hindi Tithi name
       - Hindu lunar month
       - Vikram Samvat
-
-    We explicitly provide Kolkata coordinates and timezone so
-    the calculation is tied to the same location used by the
-    rest of this project.
     """
 
     params = {
@@ -387,7 +380,8 @@ def get_tathaastu_panchang(
         dict,
     ):
         raise RuntimeError(
-            "TathaAstu Panchang response was not a JSON object."
+            "TathaAstu Panchang response was not "
+            "a JSON object."
         )
 
     if "tithi" not in data:
@@ -406,22 +400,16 @@ def get_tathaastu_panchang(
 
 
 # ============================================================
-# EXTRACT HINDI FIELD
+# HINDI / LOCALIZED FIELD
 # ============================================================
 
-def get_hindi_field(
+def get_localized_field(
     obj,
     base_name,
 ):
     """
-    TathaAstu uses companion *_hi fields for Hindi.
-
-    Example:
-
-        name      -> English/canonical value
-        name_hi   -> Hindi display value
-
-    Return an empty string if the companion is unavailable.
+    TathaAstu's current localization contract uses
+    <field>_local when lang=hi is requested.
     """
 
     if not isinstance(
@@ -431,7 +419,7 @@ def get_hindi_field(
         return ""
 
     value = obj.get(
-        f"{base_name}_hi"
+        f"{base_name}_local"
     )
 
     if value is None:
@@ -451,21 +439,16 @@ def get_hindu_month_name_hi(
     month_type,
 ):
     """
-    Extract a Hindi lunar month name from TathaAstu.
+    Extract the Hindi lunar month name.
 
-    TathaAstu documentation exposes Hindu lunar calendar
-    identity and localized companion fields.
+    Current TathaAstu fields:
 
-    We support both naming forms that may occur between
-    endpoint versions:
+        purnimanta_month_local
+        amanta_month_local
 
-        purnimanta_month_hi
-        purnimanta_hi
-
-    and:
-
-        amanta_month_hi
-        amanta_hi
+    A couple of compatibility fallbacks are retained so that
+    a future harmless field-name change does not break the
+    calendar unnecessarily.
     """
 
     if not isinstance(
@@ -477,14 +460,18 @@ def get_hindu_month_name_hi(
     if month_type == "purnimanta":
 
         candidates = [
+            "purnimanta_month_local",
             "purnimanta_month_hi",
+            "purnimanta_local",
             "purnimanta_hi",
         ]
 
     else:
 
         candidates = [
+            "amanta_month_local",
             "amanta_month_hi",
+            "amanta_local",
             "amanta_hi",
         ]
 
@@ -610,6 +597,7 @@ def extract_time(value):
     )
 
     if "T" in value:
+
         return value.split(
             "T"
         )[1][:5]
@@ -633,13 +621,6 @@ def build_day(
 
     # ========================================================
     # TATHAASTU PANCHANG
-    #
-    # This is now the source for:
-    #   - Tithi
-    #   - Paksha
-    #   - Hindi Tithi
-    #   - Hindu month
-    #   - Vikram Samvat
     # ========================================================
 
     tathaastu_panchang = (
@@ -661,6 +642,10 @@ def build_day(
         )
     )
 
+    # ========================================================
+    # TITHI
+    # ========================================================
+
     tithi_name = tithi.get(
         "name",
         "",
@@ -671,57 +656,33 @@ def build_day(
         "",
     )
 
-    # --------------------------------------------------------
-    # Hindi Tithi
-    #
-    # Normally TathaAstu provides:
-    #
-    #   tithi.name_hi
-    #
-    # We do not maintain our own translation table.
-    # --------------------------------------------------------
-
-    tithi_name_hi = get_hindi_field(
-        tithi,
-        "name",
-    )
-
-    if not tithi_name_hi:
-
-        full_name_hi = get_hindi_field(
+    tithi_name_hi = (
+        get_localized_field(
             tithi,
-            "full_name",
+            "name",
         )
-
-        if full_name_hi:
-
-            # Example:
-            # "शुक्ल पक्ष चतुर्दशी"
-            #
-            # The final word is the actual Tithi name.
-            pieces = full_name_hi.split()
-
-            if pieces:
-                tithi_name_hi = pieces[-1]
-
-    if not tithi_name_hi:
-        raise RuntimeError(
-            "TathaAstu did not provide a Hindi Tithi name "
-            f"for {day.isoformat()}."
-        )
-
-    # --------------------------------------------------------
-    # Hindi Paksha
-    # --------------------------------------------------------
-
-    paksha_name_hi = get_hindi_field(
-        tithi,
-        "paksha",
     )
 
-    # --------------------------------------------------------
-    # Hindu lunar month
-    # --------------------------------------------------------
+    if not tithi_name_hi:
+
+        raise RuntimeError(
+            "TathaAstu did not provide a Hindi/localized "
+            "Tithi name for "
+            f"{day.isoformat()}."
+        )
+
+    # ========================================================
+    # PAKSHA
+    #
+    # TathaAstu documents paksha as a canonical code and
+    # does not localize it. We retain the canonical value.
+    # ========================================================
+
+    paksha_name_hi = paksha_name
+
+    # ========================================================
+    # HINDU LUNAR MONTH
+    # ========================================================
 
     purnimanta_month_hi = (
         get_hindu_month_name_hi(
@@ -737,18 +698,27 @@ def build_day(
         )
     )
 
-    # --------------------------------------------------------
-    # Vikram Samvat
+    if not purnimanta_month_hi:
+
+        raise RuntimeError(
+            "TathaAstu did not provide a Hindi/localized "
+            "Purnimanta month for "
+            f"{day.isoformat()}."
+        )
+
+    # ========================================================
+    # VIKRAM SAMVAT
     #
-    # This number is supplied by TathaAstu.
+    # Supplied by TathaAstu.
     # We do NOT calculate it from Gregorian year.
-    # --------------------------------------------------------
+    # ========================================================
 
     samvat = hindu_calendar.get(
         "samvat"
     )
 
     if samvat is None:
+
         raise RuntimeError(
             "TathaAstu did not provide Vikram Samvat "
             f"for {day.isoformat()}."
@@ -832,7 +802,6 @@ def build_day(
         ],
 
         "month": day.month,
-
         "year": day.year,
 
         # ----------------------------------------------------
@@ -897,11 +866,11 @@ def build_hindu_month_header(
     convention used for the calendar header.
 
     If the Gregorian month crosses a Hindu lunar-month boundary,
-    both month names are shown:
+    both month names are shown.
+
+    Example:
 
         आश्विन — कार्तिक
-
-    If it stays within one lunar month, only one name appears.
     """
 
     names = []
@@ -914,9 +883,61 @@ def build_hindu_month_header(
         )
 
         if name and name not in names:
-            names.append(name)
+
+            names.append(
+                name
+            )
 
     if names:
-        return " — ".join(names)
 
-    
+        return " — ".join(
+            names
+        )
+
+    return ""
+
+
+# ============================================================
+# MAIN
+# ============================================================
+
+def main():
+
+    print()
+    print("========================================")
+    print("AJ KA DHARM — CALENDAR GENERATOR")
+    print("========================================")
+
+    # --------------------------------------------------------
+    # API KEYS
+    # --------------------------------------------------------
+
+    navamsha_api_key = os.environ.get(
+        "NAVAMSHA_API_KEY"
+    )
+
+    tathaastu_api_key = os.environ.get(
+        "TATHAASTU_API_KEY"
+    )
+
+    if not navamsha_api_key:
+
+        raise RuntimeError(
+            "NAVAMSHA_API_KEY environment variable is missing."
+        )
+
+    if not tathaastu_api_key:
+
+        raise RuntimeError(
+            "TATHAASTU_API_KEY environment variable is missing."
+        )
+
+    # --------------------------------------------------------
+    # CURRENT / TARGET DATE
+    #
+    # The dashboard always generates TOMORROW's calendar.
+    # --------------------------------------------------------
+
+    now = datetime.now(
+        ZoneInfo(
+          
