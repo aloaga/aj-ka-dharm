@@ -9,8 +9,15 @@ from PIL import Image, ImageDraw, ImageFont
 WIDTH = 800
 HEIGHT = 480
 
-INPUT_FILE = "calendar_data.json"
-OUTPUT_FILE = "dashboard.bin"
+INPUT_FILE = os.environ.get(
+    "CALENDAR_INPUT_FILE",
+    "calendar_data.json",
+)
+
+OUTPUT_FILE = os.environ.get(
+    "CALENDAR_OUTPUT_FILE",
+    "dashboard.bin",
+)
 
 TIMEZONE = ZoneInfo("Asia/Kolkata")
 
