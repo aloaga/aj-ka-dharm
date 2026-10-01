@@ -1,5 +1,7 @@
-import json
+
 import os
+import base64
+from io import BytesIO
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -42,12 +44,6 @@ FONT_LATIN_BOLD = (
     "/usr/share/fonts/truetype/dejavu/"
     "DejaVuSans-Bold.ttf"
 )
-
-FONT_SYMBOLS = (
-    "/usr/share/fonts/truetype/noto/"
-    "NotoSansSymbols2-Regular.ttf"
-)
-
 
 def load_font(path, size):
     return ImageFont.truetype(path, size)
@@ -181,34 +177,23 @@ def draw_sun_icon(draw, x, y):
 # MOON ICON
 # ============================================================
 
+# Monochrome bitmap of the actual 🌙 emoji silhouette, extracted
+# from the Noto Color Emoji artwork and embedded here so the
+# GitHub renderer does not depend on Pillow being able to render
+# color emoji fonts directly.
+MOON_EMOJI_PNG_B64 = (
+    "iVBORw0KGgoAAAANSUhEUgAAABwAAAAcAQAAAABaduI5AAAAWElEQVR42kXJsQ3CQBQFwbknZBEQuASXQE1U4JLohAtc0AUEBLY+ETjb0bbyPsIklICqfVW13/+cg/P68SzCRxiCOTypMmc5LHls6Kw6w9BGriKTm0vrL19QAx8ZIvI3KwAAAABJRU5ErkJggg=="
+)
+
 def draw_moon_icon(draw, x, y):
-    # Use the actual Unicode moon character 🌙.
-    # Noto Sans Symbols 2 provides a monochrome glyph suitable
-    # for the 1-bit e-paper display.
-    moon_font = load_font(
-        FONT_SYMBOLS,
-        36,
-    )
+    icon_data = base64.b64decode(MOON_EMOJI_PNG_B64)
+    icon = Image.open(
+        BytesIO(icon_data)
+    ).convert("1")
 
-    bbox = draw.textbbox(
-        (0, 0),
-        "🌙",
-        font=moon_font,
-    )
-
-    glyph_width = bbox[2] - bbox[0]
-    glyph_height = bbox[3] - bbox[1]
-
-    target_cx = x + 14
-    target_cy = y + 14
-
-    draw.text(
-        (
-            target_cx - glyph_width // 2 - bbox[0],
-            target_cy - glyph_height // 2 - bbox[1],
-        ),
-        "🌙",
-        font=moon_font,
+    draw.bitmap(
+        (x, y),
+        icon,
         fill=0,
     )
 
@@ -459,7 +444,7 @@ def main():
 
     draw_sun_icon(
         draw,
-        45,
+        48,
         35,
     )
 
