@@ -9,15 +9,48 @@ import requests
 
 # ============================================================
 # AJ KA DHARM — MONTHLY CALENDAR DATA ENGINE
-# LOCATION: KOLKATA
+# ============================================================
+# Panchang source : Navamsha
+# Festival source : TathaAstu
+# Festival style  : North Indian / Hindi
+# Location        : Kolkata
 # ============================================================
 
-API_URL = "https://api.navamsha.in/api/v1/panchang"
+
+# ============================================================
+# NAVAMSHA API
+# ============================================================
+
+NAVAMSHA_API_URL = (
+    "https://api.navamsha.in/api/v1/panchang"
+)
+
+
+# ============================================================
+# TATHAASTU FESTIVAL API
+# ============================================================
+
+TATHAASTU_FESTIVAL_URL = (
+    "https://api.tathaastuapi.com/v1/festivals/month"
+)
+
+TATHAASTU_REGION = "NORTH_INDIA"
+
+
+# ============================================================
+# LOCATION
+# ============================================================
 
 LATITUDE = 22.5726
 LONGITUDE = 88.3639
+
 TIMEZONE = 5.5
 TIMEZONE_NAME = "Asia/Kolkata"
+
+
+# ============================================================
+# OUTPUT
+# ============================================================
 
 OUTPUT_FILE = "calendar_data.json"
 
@@ -36,6 +69,7 @@ WEEKDAYS_HI = {
     6: "रविवार",
 }
 
+
 MONTHS_HI = {
     1: "जनवरी",
     2: "फरवरी",
@@ -50,6 +84,7 @@ MONTHS_HI = {
     11: "नवम्बर",
     12: "दिसम्बर",
 }
+
 
 TITHI_HI = {
     "Pratipada": "प्रतिपदा",
@@ -70,65 +105,10 @@ TITHI_HI = {
     "Amavasya": "अमावस्या",
 }
 
+
 PAKSHA_HI = {
     "Shukla": "शुक्ल",
     "Krishna": "कृष्ण",
-}
-
-
-# ============================================================
-# KOLKATA — SEPTEMBER 2026 FESTIVAL DATA
-#
-# Verified against the Kolkata September 2026 Panchang.
-#
-# These are major observances suitable for the small
-# calendar cells. Generic tithi-based vrats are handled
-# separately.
-# ============================================================
-
-FESTIVALS_2026 = {
-
-    "2026-09-02": "हल षष्ठी",
-
-    "2026-09-04": "जन्माष्टमी",
-
-    "2026-09-05": "दही हांडी",
-
-    "2026-09-07": "अजा एकादशी",
-
-    "2026-09-08": "भौम प्रदोष",
-
-    "2026-09-10": "पिठोरी अमावस्या",
-
-    "2026-09-11": "भाद्रपद अमावस्या",
-
-    "2026-09-12": "चन्द्र दर्शन",
-
-    "2026-09-13": "वराह जयंती",
-
-    "2026-09-14": "गणेश चतुर्थी",
-
-    "2026-09-15": "ऋषि पंचमी",
-
-    "2026-09-17": "विश्वकर्मा पूजा",
-
-    "2026-09-18": "दूर्वा अष्टमी",
-
-    "2026-09-19": "राधा अष्टमी",
-
-    "2026-09-22": "पार्श्व एकादशी",
-
-    "2026-09-23": "वामन जयंती",
-
-    "2026-09-24": "गुरु प्रदोष",
-
-    "2026-09-25": "अनंत चतुर्दशी",
-
-    "2026-09-26": "भाद्रपद पूर्णिमा",
-
-    "2026-09-27": "पितृपक्ष प्रारम्भ",
-
-    "2026-09-29": "विघ्नराज संकष्टी",
 }
 
 
@@ -137,22 +117,13 @@ FESTIVALS_2026 = {
 # ============================================================
 
 def get_basic_festival(
-    day,
     tithi_name,
     paksha_name,
 ):
     """
-    Provides a generic observance only when there is no
-    named festival for that date.
-
-    Named festival data always takes priority.
+    Fallback observance used only when TathaAstu does not
+    provide a named festival for that date.
     """
-
-    date_key = day.isoformat()
-
-    # A named festival already exists.
-    if date_key in FESTIVALS_2026:
-        return FESTIVALS_2026[date_key]
 
     if tithi_name == "Ekadashi":
         return "एकादशी व्रत"
@@ -184,6 +155,182 @@ def get_basic_festival(
 
 
 # ============================================================
+# TATHAASTU FESTIVAL DATA
+# ============================================================
+
+def get_tathaastu_festivals(
+    year,
+    month,
+    api_key,
+):
+    """
+    Fetch the complete festival/vrat list for one month.
+
+    TathaAstu calculates festival dates using its festival
+    rule engine. We do not maintain annual festival tables.
+    """
+
+    print()
+    print(
+        "Fetching festival data from TathaAstu..."
+    )
+
+    params = {
+        "year": year,
+        "month": month,
+        "region": TATHAASTU_REGION,
+        "lang": "hi",
+    }
+
+    response = requests.get(
+        TATHAASTU_FESTIVAL_URL,
+        headers={
+            "X-API-Key": api_key,
+        },
+        params=params,
+        timeout=30,
+    )
+
+    response.raise_for_status()
+
+    data = response.json()
+
+    festivals = data.get(
+        "festivals"
+    )
+
+    if not isinstance(
+        festivals,
+        list,
+    ):
+        raise RuntimeError(
+            "TathaAstu API response did not contain "
+            "a valid 'festivals' list."
+        )
+
+    print(
+        f"TathaAstu returned "
+        f"{len(festivals)} festival/vrat entries."
+    )
+
+    # --------------------------------------------------------
+    # Group festivals by observation date.
+    # --------------------------------------------------------
+
+    festivals_by_date = {}
+
+    for item in festivals:
+
+        festival_date = (
+            item.get("observation_date")
+            or item.get("date")
+        )
+
+        if not festival_date:
+            continue
+
+        festival_name = (
+            item.get("display_name_local")
+            or item.get("name_local")
+            or item.get("display_name")
+            or item.get("name")
+            or ""
+        )
+
+        festival_name = str(
+            festival_name
+        ).strip()
+
+        if not festival_name:
+            continue
+
+        entry = {
+            "name": festival_name,
+            "primary": bool(
+                item.get("primary", False)
+            ),
+            "priority": item.get(
+                "priority",
+                0,
+            ),
+            "confidence": item.get(
+                "confidence",
+                0,
+            ),
+            "festival_key": item.get(
+                "festival_key",
+                "",
+            ),
+        }
+
+        festivals_by_date.setdefault(
+            festival_date,
+            [],
+        ).append(entry)
+
+    return festivals_by_date
+
+
+# ============================================================
+# SELECT FESTIVAL FOR CALENDAR CELL
+# ============================================================
+
+def choose_festival_for_date(
+    day,
+    festivals_by_date,
+    tithi_name,
+    paksha_name,
+):
+    """
+    Select the most important festival for the small
+    calendar cell.
+
+    When multiple observances fall on the same date,
+    prefer:
+
+      1. primary festival
+      2. higher priority
+      3. higher confidence
+
+    This keeps the visual design clean without losing
+    the full festival calculation behind the scenes.
+    """
+
+    date_key = day.isoformat()
+
+    entries = festivals_by_date.get(
+        date_key,
+        [],
+    )
+
+    if entries:
+
+        entries = sorted(
+            entries,
+            key=lambda item: (
+                item["primary"],
+                item["priority"],
+                item["confidence"],
+            ),
+            reverse=True,
+        )
+
+        return entries[0]["name"]
+
+    # --------------------------------------------------------
+    # No named festival from TathaAstu.
+    #
+    # Keep our existing generic fallback so that important
+    # recurring tithi observances still appear.
+    # --------------------------------------------------------
+
+    return get_basic_festival(
+        tithi_name,
+        paksha_name,
+    )
+
+
+# ============================================================
 # NAVAMSHA API
 # ============================================================
 
@@ -192,7 +339,9 @@ def api_post(
     payload,
     api_key,
 ):
-    url = f"{API_URL}/{endpoint}"
+    url = (
+        f"{NAVAMSHA_API_URL}/{endpoint}"
+    )
 
     response = requests.post(
         url,
@@ -209,6 +358,7 @@ def api_post(
     data = response.json()
 
     if data.get("statusCode") != 200:
+
         raise RuntimeError(
             "Navamsha API error: "
             + json.dumps(
@@ -286,8 +436,9 @@ def get_panchang_at_sunrise(
         "%H:%M",
     )
 
-    check_time = sunrise_time + timedelta(
-        minutes=1
+    check_time = (
+        sunrise_time
+        + timedelta(minutes=1)
     )
 
     payload = {
@@ -332,6 +483,7 @@ def extract_time(value):
 def build_day(
     day,
     api_key,
+    festivals_by_date,
 ):
     print(
         f"  Fetching {day.isoformat()}..."
@@ -358,10 +510,12 @@ def build_day(
     # Panchang
     # --------------------------------------------------------
 
-    panchang = get_panchang_at_sunrise(
-        day,
-        sunrise,
-        api_key,
+    panchang = (
+        get_panchang_at_sunrise(
+            day,
+            sunrise,
+            api_key,
+        )
     )
 
     tithi = panchang["tithi"]
@@ -389,6 +543,7 @@ def build_day(
     moonset = ""
 
     if moon.get("rise"):
+
         moonrise = extract_time(
             moon["rise"].get(
                 "local_datetime"
@@ -396,6 +551,7 @@ def build_day(
         )
 
     if moon.get("set"):
+
         moonset = extract_time(
             moon["set"].get(
                 "local_datetime"
@@ -406,10 +562,13 @@ def build_day(
     # Festival
     # --------------------------------------------------------
 
-    festival = get_basic_festival(
-        day,
-        tithi_name,
-        paksha_name,
+    festival = (
+        choose_festival_for_date(
+            day,
+            festivals_by_date,
+            tithi_name,
+            paksha_name,
+        )
     )
 
     # --------------------------------------------------------
@@ -417,6 +576,7 @@ def build_day(
     # --------------------------------------------------------
 
     return {
+
         "date": day.isoformat(),
 
         "day": day.day,
@@ -457,13 +617,29 @@ def build_day(
 
 def main():
 
-    api_key = os.environ.get(
+    # --------------------------------------------------------
+    # API keys
+    # --------------------------------------------------------
+
+    navamsha_api_key = os.environ.get(
         "NAVAMSHA_API_KEY"
     )
 
-    if not api_key:
+    if not navamsha_api_key:
+
         raise RuntimeError(
             "NAVAMSHA_API_KEY GitHub secret "
+            "was not found."
+        )
+
+    tathaastu_api_key = os.environ.get(
+        "TATHAASTU_API_KEY"
+    )
+
+    if not tathaastu_api_key:
+
+        raise RuntimeError(
+            "TATHAASTU_API_KEY GitHub secret "
             "was not found."
         )
 
@@ -482,8 +658,9 @@ def main():
     # Generate TOMORROW'S calendar.
     # --------------------------------------------------------
 
-    target_date = today + timedelta(
-        days=1
+    target_date = (
+        today
+        + timedelta(days=1)
     )
 
     year = target_date.year
@@ -525,7 +702,37 @@ def main():
         f"Days: {days_in_month}"
     )
 
+    print(
+        f"Festival rules: {TATHAASTU_REGION}"
+    )
+
     print()
+
+    # --------------------------------------------------------
+    # Fetch festival data ONCE for the entire month.
+    #
+    # This is important because we don't want to make a
+    # separate festival API request for every day.
+    # --------------------------------------------------------
+
+    festivals_by_date = (
+        get_tathaastu_festivals(
+            year,
+            month,
+            tathaastu_api_key,
+        )
+    )
+
+    print(
+        f"Festival dates received: "
+        f"{len(festivals_by_date)}"
+    )
+
+    print()
+
+    # --------------------------------------------------------
+    # Build every day of the target month.
+    # --------------------------------------------------------
 
     days = []
 
@@ -543,7 +750,8 @@ def main():
         days.append(
             build_day(
                 day,
-                api_key,
+                navamsha_api_key,
+                festivals_by_date,
             )
         )
 
@@ -557,7 +765,9 @@ def main():
 
         "month": month,
 
-        "target_date": target_date.isoformat(),
+        "target_date": (
+            target_date.isoformat()
+        ),
 
         "month_hindi": MONTHS_HI[
             month
@@ -569,6 +779,12 @@ def main():
             "city": "Kolkata",
             "latitude": LATITUDE,
             "longitude": LONGITUDE,
+        },
+
+        "festival_source": {
+            "provider": "TathaAstu",
+            "region": TATHAASTU_REGION,
+            "language": "hi",
         },
 
         "days": days,
@@ -592,7 +808,7 @@ def main():
         )
 
     # --------------------------------------------------------
-    # Print festival report
+    # Festival / Vrat report
     # --------------------------------------------------------
 
     print()
