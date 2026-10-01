@@ -494,28 +494,53 @@ def main():
     )
 
     # ========================================================
-    # CALENDAR GEOMETRY
+    # EDGE-TO-EDGE CALENDAR GEOMETRY
     #
-    # No software outer border.
-    # No corner ornaments.
-    # Physical e-paper frame is the only outer frame.
+    # IMPORTANT:
+    #
+    # The calendar now uses the COMPLETE 800px width.
+    #
+    # There is:
+    #   - NO left outer vertical line
+    #   - NO right outer vertical line
+    #
+    # The seven columns are distributed across all 800px.
+    # The six internal separators are 1px.
+    #
+    # The weekday black header also runs completely
+    # edge-to-edge.
     # ========================================================
 
-    grid_x = 7
+    grid_x = 0
     grid_y = 91
-    grid_w = 786
+    grid_w = WIDTH
 
     weekday_h = 30
 
     calendar_bottom = 477
-
-    cell_w = grid_w // 7
 
     calendar_height = (
         calendar_bottom
         - grid_y
         - weekday_h
     )
+
+    # --------------------------------------------------------
+    # Seven column boundaries across the full 800px width.
+    #
+    # Using integer rounding distributes the extra pixels
+    # evenly instead of accumulating them at the right.
+    #
+    # Example:
+    # 0, 114, 229, 343, 457, 571, 686, 800
+    # --------------------------------------------------------
+
+    column_edges = [
+        round(
+            i * WIDTH / 7
+        )
+        for i in range(8)
+    ]
 
     weekdays = [
         "रविवार",
@@ -528,36 +553,21 @@ def main():
     ]
 
     # ========================================================
-    # WEEKDAY HEADER
+    # EDGE-TO-EDGE WEEKDAY HEADER
     # ========================================================
 
     for column, weekday in enumerate(
         weekdays
     ):
 
-        x1 = (
-            grid_x
-            + column * cell_w
-        )
-
-        if column == 6:
-            x2 = (
-                grid_x
-                + grid_w
-                - 1
-            )
-        else:
-            x2 = (
-                x1
-                + cell_w
-                - 1
-            )
+        x1 = column_edges[column]
+        x2 = column_edges[column + 1]
 
         draw.rectangle(
             (
                 x1,
                 grid_y,
-                x2,
+                x2 - 1,
                 grid_y + weekday_h - 1,
             ),
             fill=0,
@@ -589,10 +599,46 @@ def main():
         // row_count
     )
 
-    y = (
+    body_top = (
         grid_y
         + weekday_h
     )
+
+    # ========================================================
+    # HORIZONTAL GRID LINES
+    #
+    # Draw each horizontal separator ONCE across the entire
+    # 800px width.
+    # ========================================================
+
+    for row_index in range(
+        row_count + 1
+    ):
+
+        if row_index == row_count:
+            y_line = calendar_bottom - 1
+        else:
+            y_line = (
+                body_top
+                + row_index * cell_h
+            )
+
+        draw.line(
+            (
+                0,
+                y_line,
+                WIDTH - 1,
+                y_line,
+            ),
+            fill=0,
+            width=1,
+        )
+
+    # ========================================================
+    # CALENDAR CELLS
+    # ========================================================
+
+    y = body_top
 
     for row_index, row in enumerate(
         grid
@@ -602,8 +648,9 @@ def main():
             row_y2 = calendar_bottom
         else:
             row_y2 = (
-                y
-                + cell_h
+                body_top
+                + (row_index + 1)
+                * cell_h
             )
 
         actual_cell_h = (
@@ -615,56 +662,11 @@ def main():
             row
         ):
 
-            x1 = (
-                grid_x
-                + column * cell_w
-            )
+            x1 = column_edges[column]
+            x2 = column_edges[column + 1]
 
-            if column == 6:
-                x2 = (
-                    grid_x
-                    + grid_w
-                    - 1
-                )
-            else:
-                x2 = (
-                    x1
-                    + cell_w
-                    - 1
-                )
-
-            y2 = row_y2 - 1
-
-            # ------------------------------------------------
-            # IMPORTANT:
-            #
-            # Draw ONLY the top and left edges here.
-            #
-            # This means shared lines are never drawn twice.
-            # Every grid line remains exactly 1 pixel.
-            # ------------------------------------------------
-
-            draw.line(
-                (
-                    x1,
-                    y,
-                    x2,
-                    y,
-                ),
-                fill=0,
-                width=1,
-            )
-
-            draw.line(
-                (
-                    x1,
-                    y,
-                    x1,
-                    y2,
-                ),
-                fill=0,
-                width=1,
-            )
+            cell_left = x1
+            cell_right = x2
 
             if item is None:
                 continue
@@ -676,18 +678,18 @@ def main():
                 == target_date
             )
 
-            # ------------------------------------------------
+            # =================================================
             # TARGET DAY
-            # ------------------------------------------------
+            # =================================================
 
             if is_target:
 
                 draw.rectangle(
                     (
-                        x1 + 1,
+                        cell_left + 1,
                         y + 1,
-                        x2 - 1,
-                        y2 - 1,
+                        cell_right - 2,
+                        row_y2 - 2,
                     ),
                     fill=0,
                 )
@@ -702,7 +704,10 @@ def main():
             # DATE
             # =================================================
 
-            date_x = x1 + 7
+            date_x = (
+                cell_left
+                + 7
+            )
 
             draw.text(
                 (
@@ -735,7 +740,7 @@ def main():
             )
 
             tithi_x = (
-                x2
+                cell_right
                 - 7
                 - tithi_width
             )
@@ -772,8 +777,14 @@ def main():
             if festival:
 
                 available_width = (
-                    (x2 - 7)
-                    - (x1 + 7)
+                    (
+                        cell_right
+                        - 7
+                    )
+                    - (
+                        cell_left
+                        + 7
+                    )
                 )
 
                 festival_text = fit_text(
@@ -795,11 +806,15 @@ def main():
                 )
 
                 festival_x = (
-                    x1
+                    cell_left
                     + (
-                        cell_w
+                        (
+                            cell_right
+                            - cell_left
+                        )
                         - festival_width
-                    ) // 2
+                    )
+                    // 2
                 )
 
                 festival_y = (
@@ -823,41 +838,33 @@ def main():
         y = row_y2
 
     # ========================================================
-    # FINAL GRID EDGES
+    # INTERNAL VERTICAL GRID LINES
     #
-    # Right and bottom edges are drawn exactly once.
+    # ONLY the six internal separators are drawn.
+    #
+    # There is deliberately NO line at x=0.
+    # There is deliberately NO line at x=799.
+    #
+    # Each separator is exactly 1px.
     # ========================================================
 
-    grid_right = (
-        grid_x
-        + grid_w
-        - 1
-    )
+    for column in range(1, 7):
 
-    draw.line(
-        (
-            grid_right,
-            grid_y + weekday_h,
-            grid_right,
-            calendar_bottom - 1,
-        ),
-        fill=0,
-        width=1,
-    )
+        x_line = column_edges[column]
 
-    draw.line(
-        (
-            grid_x,
-            calendar_bottom - 1,
-            grid_right,
-            calendar_bottom - 1,
-        ),
-        fill=0,
-        width=1,
-    )
+        draw.line(
+            (
+                x_line,
+                body_top,
+                x_line,
+                calendar_bottom - 1,
+            ),
+            fill=0,
+            width=1,
+        )
 
     # ========================================================
-    # CREATE RAW 1-BIT BITMAP
+    # RAW 1-BIT BITMAP
     # ========================================================
 
     raw = image.convert(
@@ -886,7 +893,6 @@ def main():
         OUTPUT_FILE,
         "wb",
     ) as file:
-
         file.write(raw)
 
     print()
@@ -903,7 +909,7 @@ def main():
         f"Rows: {row_count}"
     )
     print(
-        f"Cell height: {cell_h}"
+        f"Column edges: {column_edges}"
     )
     print(
         f"Output: {OUTPUT_FILE}"
