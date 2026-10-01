@@ -76,7 +76,6 @@ MONTHS_EN = {
 # ============================================================
 
 def center_text(draw, box, text, fnt, fill=0):
-
     x1, y1, x2, y2 = box
 
     bbox = draw.textbbox(
@@ -105,7 +104,6 @@ def center_text(draw, box, text, fnt, fill=0):
 
 
 def fit_text(draw, text, fnt, max_width):
-
     if not text:
         return ""
 
@@ -119,7 +117,6 @@ def fit_text(draw, text, fnt, max_width):
         return text
 
     while len(text) > 1:
-
         text = text[:-1]
 
         candidate = text + "…"
@@ -139,6 +136,12 @@ def fit_text(draw, text, fnt, max_width):
 def format_time_12h(time_string):
     """
     Convert HH:MM into 12-hour format with AM/PM.
+
+    Examples:
+        05:19 -> 05:19 AM
+        17:53 -> 05:53 PM
+        00:05 -> 12:05 AM
+        12:10 -> 12:10 PM
     """
 
     if not time_string:
@@ -162,7 +165,6 @@ def format_time_12h(time_string):
 # ============================================================
 
 def draw_sun_icon(draw, x, y):
-
     cx = x + 14
     cy = y + 14
     radius = 7
@@ -190,7 +192,6 @@ def draw_sun_icon(draw, x, y):
     ]
 
     for x1, y1, x2, y2 in rays:
-
         draw.line(
             (
                 x1,
@@ -208,7 +209,6 @@ def draw_sun_icon(draw, x, y):
 # ============================================================
 
 def draw_moon_icon(draw, x, y):
-
     cx = x + 13
     cy = y + 13
 
@@ -238,7 +238,6 @@ def draw_moon_icon(draw, x, y):
 # ============================================================
 
 def hindu_month_label(year, month):
-
     known = {
         (2026, 1): "पौष — माघ",
         (2026, 2): "माघ — फाल्गुन",
@@ -265,7 +264,6 @@ def hindu_month_label(year, month):
 # ============================================================
 
 def build_grid(days):
-
     if not days:
         return []
 
@@ -307,7 +305,6 @@ def main():
         "r",
         encoding="utf-8",
     ) as file:
-
         data = json.load(file)
 
     days = data["days"]
@@ -316,16 +313,23 @@ def main():
 
     month_hindi = data["month_hindi"]
 
-    today = datetime.now(
-        TIMEZONE
-    ).date()
+    # --------------------------------------------------------
+    # The generator creates TOMORROW'S calendar.
+    # Read target date from calendar_data.json so the correct
+    # day is highlighted.
+    #
+    # Fallback to today's Kolkata date if target_date is not
+    # present.
+    # --------------------------------------------------------
 
-    today_string = today.isoformat()
+    target_date_string = data.get(
+        "target_date",
+        datetime.now(TIMEZONE).date().isoformat(),
+    )
 
-
-    # ========================================================
-    # CANVAS
-    # ========================================================
+    # --------------------------------------------------------
+    # Canvas
+    # --------------------------------------------------------
 
     image = Image.new(
         "1",
@@ -337,7 +341,6 @@ def main():
     )
 
     draw = ImageDraw.Draw(image)
-
 
     # ========================================================
     # FONTS
@@ -363,13 +366,11 @@ def main():
         15,
     )
 
-    # English date numbers remain bold.
     date_font = load_font(
         FONT_LATIN_BOLD,
         20,
     )
 
-    # Hindi inside calendar cells remains regular.
     tithi_font = load_font(
         FONT_DEV_REGULAR,
         15,
@@ -380,9 +381,10 @@ def main():
         15,
     )
 
-
     # ========================================================
     # HEADER
+    # Three balanced zones:
+    # sun/times, centered month + Samvat, moon/times.
     # ========================================================
 
     hindu_month = hindu_month_label(
@@ -476,7 +478,6 @@ def main():
         fill=0,
     )
 
-
     # ========================================================
     # ASTRONOMICAL TIMES
     # ========================================================
@@ -509,9 +510,8 @@ def main():
         )
     )
 
-
     # --------------------------------------------------------
-    # Left: Sun
+    # Left: sun and two timings
     # --------------------------------------------------------
 
     left_icon_x = 45
@@ -544,9 +544,8 @@ def main():
         fill=0,
     )
 
-
     # --------------------------------------------------------
-    # Right: Moon
+    # Right: moon and two timings
     # --------------------------------------------------------
 
     right_icon_x = 663
@@ -579,17 +578,13 @@ def main():
         fill=0,
     )
 
-
     # ========================================================
     # CALENDAR GEOMETRY
-    # ========================================================
     #
-    # The physical e-paper already has its own decorative
-    # border, so the software uses almost the entire canvas.
+    # No software outer border.
+    # The physical e-paper frame provides the border.
     #
-    # No outer border.
-    # No corner ornaments.
-    #
+    # Grid uses almost the entire width and height.
     # ========================================================
 
     grid_x = 7
@@ -600,7 +595,7 @@ def main():
 
     cell_w = grid_w // 7
 
-    calendar_bottom = HEIGHT - 3
+    calendar_bottom = 477
 
     calendar_height = (
         calendar_bottom
@@ -609,7 +604,6 @@ def main():
             + weekday_h
         )
     )
-
 
     weekdays = [
         "रविवार",
@@ -620,7 +614,6 @@ def main():
         "शुक्रवार",
         "शनिवार",
     ]
-
 
     # ========================================================
     # WEEKDAY HEADERS
@@ -636,11 +629,7 @@ def main():
         )
 
         if column == 6:
-            x2 = (
-                grid_x
-                + grid_w
-                - 1
-            )
+            x2 = grid_x + grid_w - 1
         else:
             x2 = (
                 x1
@@ -653,8 +642,7 @@ def main():
                 x1,
                 grid_y,
                 x2,
-                grid_y
-                + weekday_h,
+                grid_y + weekday_h - 1,
             ),
             fill=0,
         )
@@ -665,14 +653,12 @@ def main():
                 x1,
                 grid_y,
                 x2,
-                grid_y
-                + weekday_h,
+                grid_y + weekday_h,
             ),
             weekday,
             weekday_font,
             fill=1,
         )
-
 
     # ========================================================
     # CALENDAR GRID
@@ -692,26 +678,18 @@ def main():
         + weekday_h
     )
 
-
     for row_index, row in enumerate(
         grid
     ):
 
         if row_index == row_count - 1:
-
             row_y2 = calendar_bottom
-
         else:
-
-            row_y2 = (
-                y
-                + cell_h
-            )
+            row_y2 = y + cell_h
 
         actual_cell_h = (
             row_y2 - y
         )
-
 
         for column, item in enumerate(
             row
@@ -723,15 +701,12 @@ def main():
             )
 
             if column == 6:
-
                 x2 = (
                     grid_x
                     + grid_w
                     - 1
                 )
-
             else:
-
                 x2 = (
                     x1
                     + cell_w
@@ -740,38 +715,62 @@ def main():
 
             y2 = row_y2 - 1
 
-
             # ------------------------------------------------
-            # Thin, uniform cell outline
+            # IMPORTANT:
+            #
+            # Do NOT draw a full rectangle around every cell.
+            #
+            # That causes shared borders to be drawn twice and
+            # makes the grid lines look thicker.
+            #
+            # Instead, each cell draws ONLY:
+            #   - top edge
+            #   - left edge
+            #
+            # The final right and bottom edges are drawn once
+            # after the complete grid.
             # ------------------------------------------------
 
-            draw.rectangle(
+            draw.line(
                 (
                     x1,
                     y,
                     x2,
-                    y2,
+                    y,
                 ),
-                outline=0,
+                fill=0,
                 width=1,
             )
 
+            draw.line(
+                (
+                    x1,
+                    y,
+                    x1,
+                    y2,
+                ),
+                fill=0,
+                width=1,
+            )
 
             if item is None:
                 continue
 
-
             item_date = item["date"]
+
+            # ------------------------------------------------
+            # Highlight the target date generated by the
+            # calendar data.
+            # ------------------------------------------------
 
             is_today = (
                 item_date
-                == today_string
+                == target_date_string
             )
 
-
-            # =================================================
-            # CURRENT-DAY HIGHLIGHT
-            # =================================================
+            # ------------------------------------------------
+            # Current-day highlight
+            # ------------------------------------------------
 
             if is_today:
 
@@ -788,26 +787,23 @@ def main():
                 text_fill = 1
 
             else:
-
                 text_fill = 0
-
 
             # =================================================
             # DATE — LARGE LEFT
             # =================================================
 
-            date_x = x1 + 8
+            date_x = x1 + 7
 
             draw.text(
                 (
                     date_x,
-                    y + 5,
+                    y + 4,
                 ),
                 str(item["day"]),
                 font=date_font,
                 fill=text_fill,
             )
-
 
             # =================================================
             # TITHI — RIGHT OF DATE
@@ -831,34 +827,27 @@ def main():
 
             tithi_x = (
                 x2
-                - 8
+                - 7
                 - tithi_width
             )
 
             minimum_tithi_x = (
                 date_x
-                + 42
+                + 38
             )
 
-            if (
-                tithi_x
-                < minimum_tithi_x
-            ):
-
-                tithi_x = (
-                    minimum_tithi_x
-                )
+            if tithi_x < minimum_tithi_x:
+                tithi_x = minimum_tithi_x
 
             draw.text(
                 (
                     tithi_x,
-                    y + 9,
+                    y + 8,
                 ),
                 tithi,
                 font=tithi_font,
                 fill=text_fill,
             )
-
 
             # =================================================
             # FESTIVAL — BELOW
@@ -872,11 +861,11 @@ def main():
             if festival:
 
                 festival_left = (
-                    x1 + 8
+                    x1 + 7
                 )
 
                 festival_right = (
-                    x2 - 8
+                    x2 - 7
                 )
 
                 available_width = (
@@ -913,8 +902,8 @@ def main():
                 festival_y = (
                     y
                     + min(
-                        40,
-                        actual_cell_h - 24,
+                        36,
+                        actual_cell_h - 23,
                     )
                 )
 
@@ -928,9 +917,42 @@ def main():
                     fill=text_fill,
                 )
 
-
         y = row_y2
 
+    # ========================================================
+    # FINAL GRID EDGES
+    #
+    # Draw the right and bottom edges exactly once.
+    # This keeps every grid line uniformly 1 pixel.
+    # ========================================================
+
+    grid_right = (
+        grid_x
+        + grid_w
+        - 1
+    )
+
+    draw.line(
+        (
+            grid_right,
+            grid_y + weekday_h,
+            grid_right,
+            calendar_bottom - 1,
+        ),
+        fill=0,
+        width=1,
+    )
+
+    draw.line(
+        (
+            grid_x,
+            calendar_bottom - 1,
+            grid_right,
+            calendar_bottom - 1,
+        ),
+        fill=0,
+        width=1,
+    )
 
     # ========================================================
     # RAW 1-BIT BITMAP
@@ -947,7 +969,6 @@ def main():
     )
 
     if len(raw) != expected_size:
-
         raise RuntimeError(
             f"Invalid bitmap size: "
             f"{len(raw)} bytes; "
@@ -956,56 +977,4 @@ def main():
 
     with open(
         OUTPUT_FILE,
-        "wb",
-    ) as file:
-
-        file.write(raw)
-
-
-    print()
-
-    print(
-        "========================================"
-    )
-
-    print(
-        "CALENDAR RENDER COMPLETE"
-    )
-
-    print(
-        "========================================"
-    )
-
-    print(
-        f"Month: {month_hindi} {year}"
-    )
-
-    print(
-        f"Today: {today_string}"
-    )
-
-    print(
-        f"Rows: {row_count}"
-    )
-
-    print(
-        f"Cell height: {cell_h}"
-    )
-
-    print(
-        f"Output: {OUTPUT_FILE}"
-    )
-
-    print(
-        f"Size: {len(raw)} bytes"
-    )
-
-    print(
-        "Expected: 48000 bytes"
-    )
-
-    print()
-
-
-if __name__ == "__main__":
-    main()
+        
