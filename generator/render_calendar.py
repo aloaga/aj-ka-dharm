@@ -6,11 +6,6 @@ from zoneinfo import ZoneInfo
 from PIL import Image, ImageDraw, ImageFont
 
 
-# ============================================================
-# AJ KA DHARM
-# PREMIUM 800 x 480 MONOCHROME CALENDAR
-# ============================================================
-
 WIDTH = 800
 HEIGHT = 480
 
@@ -21,7 +16,7 @@ TIMEZONE = ZoneInfo("Asia/Kolkata")
 
 
 # ============================================================
-# FONT PATHS
+# FONTS
 # ============================================================
 
 DEVANAGARI_DIR = "/usr/share/fonts/truetype/noto"
@@ -36,11 +31,6 @@ FONT_DEV_BOLD = os.path.join(
     "NotoSansDevanagari-Bold.ttf",
 )
 
-FONT_LATIN = (
-    "/usr/share/fonts/truetype/dejavu/"
-    "DejaVuSans.ttf"
-)
-
 FONT_LATIN_BOLD = (
     "/usr/share/fonts/truetype/dejavu/"
     "DejaVuSans-Bold.ttf"
@@ -52,36 +42,16 @@ def load_font(path, size):
 
 
 # ============================================================
-# MONTH NAMES
-# ============================================================
-
-MONTHS_EN = {
-    1: "January",
-    2: "February",
-    3: "March",
-    4: "April",
-    5: "May",
-    6: "June",
-    7: "July",
-    8: "August",
-    9: "September",
-    10: "October",
-    11: "November",
-    12: "December",
-}
-
-
-# ============================================================
 # TEXT HELPERS
 # ============================================================
 
-def center_text(draw, box, text, fnt, fill=0):
+def center_text(draw, box, text, font, fill=0):
     x1, y1, x2, y2 = box
 
     bbox = draw.textbbox(
         (0, 0),
         text,
-        font=fnt,
+        font=font,
     )
 
     tw = bbox[2] - bbox[0]
@@ -98,19 +68,19 @@ def center_text(draw, box, text, fnt, fill=0):
     draw.text(
         (x, y),
         text,
-        font=fnt,
+        font=font,
         fill=fill,
     )
 
 
-def fit_text(draw, text, fnt, max_width):
+def fit_text(draw, text, font, max_width):
     if not text:
         return ""
 
     bbox = draw.textbbox(
         (0, 0),
         text,
-        font=fnt,
+        font=font,
     )
 
     if bbox[2] - bbox[0] <= max_width:
@@ -124,40 +94,30 @@ def fit_text(draw, text, fnt, max_width):
         bbox = draw.textbbox(
             (0, 0),
             candidate,
-            font=fnt,
+            font=font,
         )
 
         if bbox[2] - bbox[0] <= max_width:
             return candidate
 
-    return text
+    return "…"
 
 
-def format_time_12h(time_string):
-    """
-    Convert HH:MM into 12-hour format with AM/PM.
-
-    Examples:
-        05:19 -> 05:19 AM
-        17:53 -> 05:53 PM
-        00:05 -> 12:05 AM
-        12:10 -> 12:10 PM
-    """
-
-    if not time_string:
+def format_time_12h(value):
+    if not value:
         return ""
 
-    hour, minute = time_string.split(":")
+    hour, minute = value.split(":")
     hour = int(hour)
 
     suffix = "AM" if hour < 12 else "PM"
 
-    display_hour = hour % 12
+    hour12 = hour % 12
 
-    if display_hour == 0:
-        display_hour = 12
+    if hour12 == 0:
+        hour12 = 12
 
-    return f"{display_hour:02d}:{minute} {suffix}"
+    return f"{hour12:02d}:{minute} {suffix}"
 
 
 # ============================================================
@@ -167,6 +127,7 @@ def format_time_12h(time_string):
 def draw_sun_icon(draw, x, y):
     cx = x + 14
     cy = y + 14
+
     radius = 7
 
     draw.ellipse(
@@ -205,7 +166,7 @@ def draw_sun_icon(draw, x, y):
 
 
 # ============================================================
-# CRESCENT MOON ICON
+# MOON ICON
 # ============================================================
 
 def draw_moon_icon(draw, x, y):
@@ -234,7 +195,7 @@ def draw_moon_icon(draw, x, y):
 
 
 # ============================================================
-# HINDU MONTH LABEL
+# HINDU MONTH
 # ============================================================
 
 def hindu_month_label(year, month):
@@ -260,7 +221,7 @@ def hindu_month_label(year, month):
 
 
 # ============================================================
-# CALENDAR GRID
+# BUILD SUNDAY-FIRST GRID
 # ============================================================
 
 def build_grid(days):
@@ -279,7 +240,7 @@ def build_grid(days):
 
     grid.extend(days)
 
-    while len(grid) % 7 != 0:
+    while len(grid) % 7:
         grid.append(None)
 
     return [
@@ -308,28 +269,22 @@ def main():
         data = json.load(file)
 
     days = data["days"]
+
     year = data["year"]
     month = data["month"]
 
     month_hindi = data["month_hindi"]
 
-    # --------------------------------------------------------
-    # The generator creates TOMORROW'S calendar.
-    # Read target date from calendar_data.json so the correct
-    # day is highlighted.
-    #
-    # Fallback to today's Kolkata date if target_date is not
-    # present.
-    # --------------------------------------------------------
-
-    target_date_string = data.get(
+    target_date = data.get(
         "target_date",
-        datetime.now(TIMEZONE).date().isoformat(),
+        datetime.now(
+            TIMEZONE
+        ).date().isoformat(),
     )
 
-    # --------------------------------------------------------
-    # Canvas
-    # --------------------------------------------------------
+    # ========================================================
+    # CANVAS
+    # ========================================================
 
     image = Image.new(
         "1",
@@ -345,16 +300,6 @@ def main():
     # ========================================================
     # FONTS
     # ========================================================
-
-    title_font = load_font(
-        FONT_DEV_BOLD,
-        28,
-    )
-
-    hindu_month_header_font = load_font(
-        FONT_DEV_BOLD,
-        16,
-    )
 
     time_font = load_font(
         FONT_LATIN_BOLD,
@@ -381,10 +326,13 @@ def main():
         15,
     )
 
+    header_font = load_font(
+        FONT_DEV_BOLD,
+        22,
+    )
+
     # ========================================================
     # HEADER
-    # Three balanced zones:
-    # sun/times, centered month + Samvat, moon/times.
     # ========================================================
 
     hindu_month = hindu_month_label(
@@ -402,21 +350,16 @@ def main():
         f"विक्रम संवत {samvat_year}"
     )
 
-    header_center_font = load_font(
-        FONT_DEV_BOLD,
-        22,
-    )
-
     hindu_bbox = draw.textbbox(
         (0, 0),
         hindu_month,
-        font=header_center_font,
+        font=header_font,
     )
 
     samvat_bbox = draw.textbbox(
         (0, 0),
         samvat_text,
-        font=header_center_font,
+        font=header_font,
     )
 
     hindu_width = (
@@ -431,15 +374,15 @@ def main():
 
     center_gap = 24
 
-    combined_center_width = (
+    combined_width = (
         hindu_width
         + center_gap
         + samvat_width
     )
 
-    center_start_x = (
+    start_x = (
         WIDTH
-        - combined_center_width
+        - combined_width
     ) // 2
 
     center_y = 47
@@ -456,30 +399,30 @@ def main():
 
     draw.text(
         (
-            center_start_x,
+            start_x,
             center_y
             - hindu_height // 2,
         ),
         hindu_month,
-        font=header_center_font,
+        font=header_font,
         fill=0,
     )
 
     draw.text(
         (
-            center_start_x
+            start_x
             + hindu_width
             + center_gap,
             center_y
             - samvat_height // 2,
         ),
         samvat_text,
-        font=header_center_font,
+        font=header_font,
         fill=0,
     )
 
     # ========================================================
-    # ASTRONOMICAL TIMES
+    # SUN / MOON TIMES
     # ========================================================
 
     sunrise = format_time_12h(
@@ -510,69 +453,41 @@ def main():
         )
     )
 
-    # --------------------------------------------------------
-    # Left: sun and two timings
-    # --------------------------------------------------------
-
-    left_icon_x = 45
-    left_icon_y = 35
-    left_time_x = 82
-
     draw_sun_icon(
         draw,
-        left_icon_x,
-        left_icon_y,
+        45,
+        35,
     )
 
     draw.text(
-        (
-            left_time_x,
-            35,
-        ),
+        (82, 35),
         sunrise,
         font=time_font,
         fill=0,
     )
 
     draw.text(
-        (
-            left_time_x,
-            62,
-        ),
+        (82, 62),
         sunset,
         font=time_font,
         fill=0,
     )
 
-    # --------------------------------------------------------
-    # Right: moon and two timings
-    # --------------------------------------------------------
-
-    right_icon_x = 663
-    right_icon_y = 35
-    right_time_x = 700
-
     draw_moon_icon(
         draw,
-        right_icon_x,
-        right_icon_y,
+        663,
+        35,
     )
 
     draw.text(
-        (
-            right_time_x,
-            35,
-        ),
+        (700, 35),
         moonrise,
         font=time_font,
         fill=0,
     )
 
     draw.text(
-        (
-            right_time_x,
-            62,
-        ),
+        (700, 62),
         moonset,
         font=time_font,
         fill=0,
@@ -582,9 +497,8 @@ def main():
     # CALENDAR GEOMETRY
     #
     # No software outer border.
-    # The physical e-paper frame provides the border.
-    #
-    # Grid uses almost the entire width and height.
+    # No corner ornaments.
+    # Physical e-paper frame is the only outer frame.
     # ========================================================
 
     grid_x = 7
@@ -593,16 +507,14 @@ def main():
 
     weekday_h = 30
 
-    cell_w = grid_w // 7
-
     calendar_bottom = 477
+
+    cell_w = grid_w // 7
 
     calendar_height = (
         calendar_bottom
-        - (
-            grid_y
-            + weekday_h
-        )
+        - grid_y
+        - weekday_h
     )
 
     weekdays = [
@@ -616,7 +528,7 @@ def main():
     ]
 
     # ========================================================
-    # WEEKDAY HEADERS
+    # WEEKDAY HEADER
     # ========================================================
 
     for column, weekday in enumerate(
@@ -629,7 +541,11 @@ def main():
         )
 
         if column == 6:
-            x2 = grid_x + grid_w - 1
+            x2 = (
+                grid_x
+                + grid_w
+                - 1
+            )
         else:
             x2 = (
                 x1
@@ -685,10 +601,14 @@ def main():
         if row_index == row_count - 1:
             row_y2 = calendar_bottom
         else:
-            row_y2 = y + cell_h
+            row_y2 = (
+                y
+                + cell_h
+            )
 
         actual_cell_h = (
-            row_y2 - y
+            row_y2
+            - y
         )
 
         for column, item in enumerate(
@@ -718,17 +638,10 @@ def main():
             # ------------------------------------------------
             # IMPORTANT:
             #
-            # Do NOT draw a full rectangle around every cell.
+            # Draw ONLY the top and left edges here.
             #
-            # That causes shared borders to be drawn twice and
-            # makes the grid lines look thicker.
-            #
-            # Instead, each cell draws ONLY:
-            #   - top edge
-            #   - left edge
-            #
-            # The final right and bottom edges are drawn once
-            # after the complete grid.
+            # This means shared lines are never drawn twice.
+            # Every grid line remains exactly 1 pixel.
             # ------------------------------------------------
 
             draw.line(
@@ -758,21 +671,16 @@ def main():
 
             item_date = item["date"]
 
-            # ------------------------------------------------
-            # Highlight the target date generated by the
-            # calendar data.
-            # ------------------------------------------------
-
-            is_today = (
+            is_target = (
                 item_date
-                == target_date_string
+                == target_date
             )
 
             # ------------------------------------------------
-            # Current-day highlight
+            # TARGET DAY
             # ------------------------------------------------
 
-            if is_today:
+            if is_target:
 
                 draw.rectangle(
                     (
@@ -787,10 +695,11 @@ def main():
                 text_fill = 1
 
             else:
+
                 text_fill = 0
 
             # =================================================
-            # DATE — LARGE LEFT
+            # DATE
             # =================================================
 
             date_x = x1 + 7
@@ -806,7 +715,7 @@ def main():
             )
 
             # =================================================
-            # TITHI — RIGHT OF DATE
+            # TITHI
             # =================================================
 
             tithi = item.get(
@@ -814,15 +723,15 @@ def main():
                 "",
             )
 
-            tithi_box = draw.textbbox(
+            tithi_bbox = draw.textbbox(
                 (0, 0),
                 tithi,
                 font=tithi_font,
             )
 
             tithi_width = (
-                tithi_box[2]
-                - tithi_box[0]
+                tithi_bbox[2]
+                - tithi_bbox[0]
             )
 
             tithi_x = (
@@ -837,7 +746,9 @@ def main():
             )
 
             if tithi_x < minimum_tithi_x:
-                tithi_x = minimum_tithi_x
+                tithi_x = (
+                    minimum_tithi_x
+                )
 
             draw.text(
                 (
@@ -850,7 +761,7 @@ def main():
             )
 
             # =================================================
-            # FESTIVAL — BELOW
+            # FESTIVAL
             # =================================================
 
             festival = item.get(
@@ -860,17 +771,9 @@ def main():
 
             if festival:
 
-                festival_left = (
-                    x1 + 7
-                )
-
-                festival_right = (
-                    x2 - 7
-                )
-
                 available_width = (
-                    festival_right
-                    - festival_left
+                    (x2 - 7)
+                    - (x1 + 7)
                 )
 
                 festival_text = fit_text(
@@ -880,15 +783,15 @@ def main():
                     available_width,
                 )
 
-                festival_box = draw.textbbox(
+                festival_bbox = draw.textbbox(
                     (0, 0),
                     festival_text,
                     font=festival_font,
                 )
 
                 festival_width = (
-                    festival_box[2]
-                    - festival_box[0]
+                    festival_bbox[2]
+                    - festival_bbox[0]
                 )
 
                 festival_x = (
@@ -922,8 +825,7 @@ def main():
     # ========================================================
     # FINAL GRID EDGES
     #
-    # Draw the right and bottom edges exactly once.
-    # This keeps every grid line uniformly 1 pixel.
+    # Right and bottom edges are drawn exactly once.
     # ========================================================
 
     grid_right = (
@@ -955,12 +857,12 @@ def main():
     )
 
     # ========================================================
-    # RAW 1-BIT BITMAP
+    # CREATE RAW 1-BIT BITMAP
     # ========================================================
 
-    image = image.convert("1")
-
-    raw = image.tobytes()
+    raw = image.convert(
+        "1"
+    ).tobytes()
 
     expected_size = (
         WIDTH
@@ -969,12 +871,51 @@ def main():
     )
 
     if len(raw) != expected_size:
+
         raise RuntimeError(
             f"Invalid bitmap size: "
             f"{len(raw)} bytes; "
             f"expected {expected_size}"
         )
 
+    # ========================================================
+    # SAVE
+    # ========================================================
+
     with open(
         OUTPUT_FILE,
-        
+        "wb",
+    ) as file:
+
+        file.write(raw)
+
+    print()
+    print("========================================")
+    print("CALENDAR RENDER COMPLETE")
+    print("========================================")
+    print(
+        f"Month: {month_hindi} {year}"
+    )
+    print(
+        f"Target date: {target_date}"
+    )
+    print(
+        f"Rows: {row_count}"
+    )
+    print(
+        f"Cell height: {cell_h}"
+    )
+    print(
+        f"Output: {OUTPUT_FILE}"
+    )
+    print(
+        f"Size: {len(raw)} bytes"
+    )
+    print(
+        "Expected: 48000 bytes"
+    )
+    print("========================================")
+
+
+if __name__ == "__main__":
+    main()
