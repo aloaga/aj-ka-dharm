@@ -474,7 +474,7 @@ def main():
 
     draw_moon_icon(
         draw,
-        635,
+        650,
         35,
     )
 
