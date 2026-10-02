@@ -1,0 +1,20 @@
+name: Test TathaAstu Calendar Month
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Test calendar month endpoint
+        env:
+          TATHAASTU_API_KEY: ${{ secrets.TATHAASTU_API_KEY }}
+        run: |
+          curl -sS \
+            "https://api.tathaastuapi.com/v1/calendar/month?year=2026&month=10&lat=22.5726&lon=88.3639" \
+            -H "X-API-Key: ${TATHAASTU_API_KEY}" \
+            -o calendar-month-test.json
+
+          python -m json.tool calendar-month-test.json
