@@ -13,9 +13,9 @@ import requests
 #
 # Panchang source : TathaAstu monthly calendar API
 # Festival source : TathaAstu
-# Astronomical     : Navamsha
-# Festival style   : North Indian / Hindi
-# Location         : Kolkata
+# Astronomical    : Navamsha
+# Festival style  : North Indian / Hindi
+# Location        : Kolkata
 #
 # IMPORTANT:
 #
@@ -24,8 +24,16 @@ import requests
 #
 # This version uses /v1/calendar/month instead.
 #
-# This dramatically reduces TathaAstu usage and keeps the
-# project within the Free 500-request/month allowance.
+# TathaAstu usage per required month:
+#
+#   1 x /v1/calendar/month
+#   1 x /v1/festivals/month
+#   2 x /v1/hindu-month
+#   1 x /v1/samvatsara
+#
+# Navamsha astronomical calls are cached by date so that
+# today's and tomorrow's calendars do not request the same
+# date twice.
 # ============================================================
 
 
@@ -177,6 +185,31 @@ TITHI_HI = {
 
 
 # ============================================================
+# CANONICAL TITHI NAMES BY NUMBER
+#
+# TathaAstu /v1/calendar/month returns tithi_num and paksha
+# rather than a nested tithi object.
+# ============================================================
+
+TITHI_BY_NUMBER = {
+    1: ("Pratipada", "प्रतिपदा"),
+    2: ("Dwitiya", "द्वितीया"),
+    3: ("Tritiya", "तृतीया"),
+    4: ("Chaturthi", "चतुर्थी"),
+    5: ("Panchami", "पंचमी"),
+    6: ("Shashthi", "षष्ठी"),
+    7: ("Saptami", "सप्तमी"),
+    8: ("Ashtami", "अष्टमी"),
+    9: ("Navami", "नवमी"),
+    10: ("Dashami", "दशमी"),
+    11: ("Ekadashi", "एकादशी"),
+    12: ("Dwadashi", "द्वादशी"),
+    13: ("Trayodashi", "त्रयोदशी"),
+    14: ("Chaturdashi", "चतुर्दशी"),
+}
+
+
+# ============================================================
 # GENERIC TITHI-BASED OBSERVANCES
 # ============================================================
 
@@ -276,6 +309,22 @@ def get_tathaastu_calendar_month(
     """
     Fetch the complete Panchang calendar for one Gregorian
     month in a single TathaAstu request.
+
+    Actual /v1/calendar/month response structure uses fields
+    such as:
+
+        panchang_date
+        tithi_num
+        paksha
+        nakshatra_num
+        yoga_num
+        weekday_num
+        sunrise
+        sunset
+        is_ekadashi
+        is_purnima
+        is_amavasya
+        festivals
     """
 
     print(
@@ -329,8 +378,13 @@ def get_tathaastu_calendar_month(
         ):
             continue
 
+        # ----------------------------------------------------
+        # ACTUAL MONTHLY API DATE FIELD
+        # ----------------------------------------------------
+
         raw_date = (
-            item.get("date")
+            item.get("panchang_date")
+            or item.get("date")
             or item.get("day_date")
         )
 
@@ -355,117 +409,103 @@ def get_tathaastu_calendar_month(
         )[:10]
 
         # ----------------------------------------------------
-        # TITHI
+        # TITHI NUMBER
         # ----------------------------------------------------
 
-        tithi = item.get(
-            "tithi",
-            "",
+        raw_tithi_number = item.get(
+            "tithi_num"
         )
 
-        tithi_name = ""
-        tithi_name_hi = ""
-        tithi_number = None
-        paksha = ""
-
-        if isinstance(
-            tithi,
-            dict,
-        ):
-
-            tithi_name = (
-                tithi.get("name")
-                or tithi.get("key")
-                or ""
-            )
-
-            tithi_name_hi = (
-                tithi.get("name_local")
-                or tithi.get("name_hi")
-                or tithi.get("local")
-                or ""
-            )
-
+        try:
             tithi_number = (
-                tithi.get("number")
+                int(raw_tithi_number)
+                if raw_tithi_number is not None
+                else None
             )
+        except (
+            TypeError,
+            ValueError,
+        ):
+            tithi_number = None
 
-            paksha = (
-                tithi.get("paksha")
-                or ""
+        # ----------------------------------------------------
+        # PAKSHA
+        # ----------------------------------------------------
+
+        paksha = str(
+            item.get(
+                "paksha",
+                "",
             )
+        ).strip()
+
+        paksha_upper = paksha.upper()
+
+        # ----------------------------------------------------
+        # SPECIAL TITHIS
+        #
+        # The monthly response exposes explicit flags for
+        # Purnima and Amavasya, so use those when available.
+        # ----------------------------------------------------
+
+        is_purnima = bool(
+            item.get(
+                "is_purnima",
+                0,
+            )
+        )
+
+        is_amavasya = bool(
+            item.get(
+                "is_amavasya",
+                0,
+            )
+        )
+
+        if is_purnima:
+            tithi_name = "Purnima"
+            tithi_name_hi = "पूर्णिमा"
+
+        elif is_amavasya:
+            tithi_name = "Amavasya"
+            tithi_name_hi = "अमावस्या"
+
+        elif tithi_number == 15:
+
+            if paksha_upper == "KRISHNA":
+                tithi_name = "Amavasya"
+                tithi_name_hi = "अमावस्या"
+
+            else:
+                tithi_name = "Purnima"
+                tithi_name_hi = "पूर्णिमा"
+
+        elif tithi_number == 30:
+
+            tithi_name = "Amavasya"
+            tithi_name_hi = "अमावस्या"
+
+        elif tithi_number in TITHI_BY_NUMBER:
+
+            (
+                tithi_name,
+                tithi_name_hi,
+            ) = TITHI_BY_NUMBER[
+                tithi_number
+            ]
 
         else:
 
-            tithi_name = str(
-                tithi
-            ).strip()
-
-            tithi_name_hi = (
-                item.get("tithi_local")
-                or item.get("tithi_hi")
-                or ""
-            )
-
-            tithi_number = (
-                item.get("tithi_number")
-            )
-
-            paksha = (
-                item.get("paksha")
-                or ""
-            )
-
-        # ----------------------------------------------------
-        # Some monthly responses may put paksha at top level.
-        # ----------------------------------------------------
-
-        if not paksha:
-
-            paksha = (
-                item.get("paksha")
-                or ""
-            )
-
-        # ----------------------------------------------------
-        # Hindi Tithi
-        # ----------------------------------------------------
-
-        if not tithi_name_hi:
-
-            tithi_name_hi = (
-                TITHI_HI.get(
-                    tithi_name,
-                    "",
-                )
-            )
-
-        # If TathaAstu already returned Hindi, preserve it.
-        if (
-            not tithi_name_hi
-            and any(
-                ord(char) > 127
-                for char in tithi_name
-            )
-        ):
-            tithi_name_hi = tithi_name
-
-        if not tithi_name:
-
             raise RuntimeError(
-                "TathaAstu monthly response did not "
-                f"provide a Tithi for {day_key}."
+                "TathaAstu monthly response contained an "
+                f"unknown Tithi number for {day_key}: "
+                f"{raw_tithi_number!r}. "
+                f"Available item keys: {sorted(item.keys())}"
             )
 
-        if not tithi_name_hi:
-
-            raise RuntimeError(
-                "TathaAstu monthly response did not "
-                "provide a Hindi Tithi name for "
-                f"{day_key}.\n"
-                f"Available item keys: "
-                f"{sorted(item.keys())}"
-            )
+        # ----------------------------------------------------
+        # FINAL MONTHLY RECORD
+        # ----------------------------------------------------
 
         days_by_date[day_key] = {
             "tithi_name": tithi_name,
@@ -501,6 +541,11 @@ def get_tathaastu_festivals(
 ):
     """
     Fetch the complete festival/vrat list for one month.
+
+    This remains a separate request because the monthly
+    calendar endpoint returns festival names in its own
+    response, while the dedicated festival endpoint provides
+    the requested North India / Hindi festival data.
     """
 
     print(
@@ -657,8 +702,7 @@ def get_tathaastu_hindu_month(
     We deliberately call this only for the first and last
     day of each required Gregorian month.
 
-    This is enough to detect a Purnimanta month transition
-    inside a Gregorian month without making daily API calls.
+    This avoids daily Hindu-month API calls.
     """
 
     print(
@@ -1229,13 +1273,11 @@ def build_calendar_output(
     while current_day <= last_day:
 
         # ----------------------------------------------------
-        # Use the first/last-day Hindu month values only where
-        # they exist.
-        #
-        # For all middle dates, use the first-day value.
+        # Use first/last-day Hindu month values where they
+        # exist. Middle dates use the first-day value.
         #
         # If first and last differ, the header will contain
-        # both names, preserving the existing calendar design.
+        # both names.
         # ----------------------------------------------------
 
         hindu_month_name = (
@@ -1543,9 +1585,6 @@ def main():
         # TWO Hindu-month requests:
         #
         # first day + last day
-        #
-        # This lets us detect a lunar-month transition while
-        # avoiding daily Hindu-month API calls.
         # ----------------------------------------------------
 
         first_month = (
@@ -1782,4 +1821,4 @@ def main():
 # ============================================================
 
 if __name__ == "__main__":
-    main()6*
+    main()
