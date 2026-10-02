@@ -197,11 +197,11 @@ icon = Image.eval(
     icon,
     lambda pixel: 1 - pixel
 )
-    draw.bitmap(
-        (x, y),
-        icon,
-        fill=0,
-    )
+draw.bitmap(
+    (x, y),
+    icon,
+    fill=0,
+)
 
 
 
